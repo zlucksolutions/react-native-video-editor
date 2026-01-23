@@ -220,7 +220,7 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
       type: 'crop',
       selection_params: cropRatio,
     });
-  }, [cropRatio]);
+  }, [cropRatio, upsertOperation]);
 
   // Initialize editor
   const initEditor = useCallback(({ source }: InitParams) => {
@@ -533,7 +533,7 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
         return prev;
       });
     },
-    [upsertOperation, getFontSizeForVideo]
+    [getFontSizeForVideo]
   );
 
   const setVoiceoverSegments = useCallback(
@@ -556,57 +556,50 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
     [upsertOperation]
   );
 
-  const addVoiceoverSegment = useCallback(
-    (segment: VoiceoverSegment) => {
-      setVoiceoverSegmentsState((prev) => [...prev, segment]);
-      const operation = {
-        type: 'addVoiceOver',
-        voiceOverUri: segment.uri,
-        startTime: segment.start,
-        endTime: segment.end,
-      };
-      videoElementsRef.current.push(operation);
-    },
-    []
-  );
+  const addVoiceoverSegment = useCallback((segment: VoiceoverSegment) => {
+    setVoiceoverSegmentsState((prev) => [...prev, segment]);
+    const operation = {
+      type: 'addVoiceOver',
+      voiceOverUri: segment.uri,
+      startTime: segment.start,
+      endTime: segment.end,
+    };
+    videoElementsRef.current.push(operation);
+  }, []);
 
-  const removeVoiceoverSegment = useCallback(
-    (segmentId: string) => {
-      setVoiceoverSegmentsState((prev) => {
-        const newSegments = prev.filter((seg) => seg.id !== segmentId);
-        // Remove all existing voiceover operations
-        videoElementsRef.current = videoElementsRef.current.filter(
-          (e) => e.type !== 'addVoiceOver'
-        );
-        // Rebuild voiceover operations with remaining segments
-        newSegments.forEach((segment) => {
-          // Validate before adding operation
-          if (segment.uri && segment.uri.trim() !== '') {
-            videoElementsRef.current.push({
-              type: 'addVoiceOver',
-              voiceOverUri: segment.uri,
-              startTime: segment.start,
-              endTime: segment.end,
-            });
-          }
-        });
-        return newSegments;
-      });
-
-      // Clear active segment if it's the one being deleted
-      setActiveSegment((prev) => {
-        if (prev?.type === 'voiceover' && prev?.id === segmentId) {
-          return null;
+  const removeVoiceoverSegment = useCallback((segmentId: string) => {
+    setVoiceoverSegmentsState((prev) => {
+      const newSegments = prev.filter((seg) => seg.id !== segmentId);
+      // Remove all existing voiceover operations
+      videoElementsRef.current = videoElementsRef.current.filter(
+        (e) => e.type !== 'addVoiceOver'
+      );
+      // Rebuild voiceover operations with remaining segments
+      newSegments.forEach((segment) => {
+        // Validate before adding operation
+        if (segment.uri && segment.uri.trim() !== '') {
+          videoElementsRef.current.push({
+            type: 'addVoiceOver',
+            voiceOverUri: segment.uri,
+            startTime: segment.start,
+            endTime: segment.end,
+          });
         }
-        return prev;
       });
-    },
-    []
-  );
+      return newSegments;
+    });
+
+    // Clear active segment if it's the one being deleted
+    setActiveSegment((prev) => {
+      if (prev?.type === 'voiceover' && prev?.id === segmentId) {
+        return null;
+      }
+      return prev;
+    });
+  }, []);
 
   // Build native export JSON
   const buildExportConfig = useCallback(() => {
-
     // Filter out invalid operations before passing to native
     const validElements = videoElementsRef.current.filter((element) => {
       // Validate audio operations
@@ -663,7 +656,6 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
 
       return true;
     });
-
 
     return {
       videoElements: validElements,

@@ -377,7 +377,7 @@ export const PreviewArea: React.FC<Props> = ({
             audioOnly
             playInBackground={false}
             playWhenInactive={false}
-            style={{ width: 0, height: 0, position: 'absolute' }}
+            style={styles.hiddenVoiceover}
             onLoad={() => {
               // Seek to correct position when audio loads
               if (isActive && relativeTime > 0) {
@@ -422,5 +422,10 @@ const styles = ScaledSheet.create({
     color: '#fff',
     fontSize: '24@ms',
     marginLeft: '4@ms',
+  },
+  hiddenVoiceover: {
+    width: 0,
+    height: 0,
+    position: 'absolute',
   },
 });

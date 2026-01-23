@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Pressable, ScrollView, Text, Platform } from 'react-native';
 // @ts-ignore - Peer dependency
 import Animated, {
@@ -10,7 +10,7 @@ import Animated, {
   // @ts-ignore - Peer dependency
 } from 'react-native-reanimated';
 // @ts-ignore - Peer dependency
-import { ScaledSheet, moderateScale } from 'react-native-size-matters';
+import { moderateScale } from 'react-native-size-matters';
 // @ts-ignore - Peer dependency
 import FastImage from 'react-native-fast-image';
 // @ts-ignore - Peer dependency
@@ -152,7 +152,6 @@ export const Timeline: React.FC<TimelineProps> = ({
   useEffect(() => {
     if (duration > 0 && validVideoSource) {
       if (thumbnails.length === 0 && !isGenerating) {
-
         initThumbnails(duration);
       } else if (thumbnails.length > 0) {
       } else if (isGenerating) {
@@ -182,6 +181,12 @@ export const Timeline: React.FC<TimelineProps> = ({
   const scrollX = useSharedValue(0);
   const isUserScrollingShared = useSharedValue(false);
 
+  // Memoized styles for timeline width
+  const timelineWidthStyle = useMemo(
+    () => ({ width: timelineWidth }),
+    [timelineWidth]
+  );
+
   // Text trim shared values
   const activeTextTrimStart = useSharedValue(0);
   const activeTextTrimEnd = useSharedValue(0);
@@ -209,7 +214,13 @@ export const Timeline: React.FC<TimelineProps> = ({
       updateTextSegmentStart,
       updateTextSegmentEnd,
     };
-  }, [duration, activeSegment, updateTextSegmentStart, updateTextSegmentEnd]);
+  }, [
+    duration,
+    activeSegment,
+    updateTextSegmentStart,
+    updateTextSegmentEnd,
+    gestureContext,
+  ]);
 
   // Sync trim timeline width with actual timeline width
   useEffect(() => {
@@ -238,7 +249,14 @@ export const Timeline: React.FC<TimelineProps> = ({
         activeTextTrimEnd.value = endPos;
       }
     }
-  }, [activeSegment, textSegments, duration, timelineWidth]);
+  }, [
+    activeSegment,
+    textSegments,
+    duration,
+    timelineWidth,
+    activeTextTrimStart,
+    activeTextTrimEnd,
+  ]);
 
   // Auto-scroll timeline to follow playhead - always sync with video position
   useEffect(() => {
@@ -281,42 +299,45 @@ export const Timeline: React.FC<TimelineProps> = ({
     isUserScrollingShared.value = true;
     wasPlayingBeforeScrub.current = isPlaying;
     if (isPlaying) setIsPlaying(false);
-  }, [isPlaying, setIsPlaying]);
+  }, [isPlaying, setIsPlaying, isUserScrollingShared]);
 
   const handleTouchStart = useCallback(() => {
     didScrollRef.current = false;
     isUserScrolling.current = true;
     isUserScrollingShared.value = true;
     if (isPlaying) setIsPlaying(false);
-  }, [isPlaying, setIsPlaying]);
+  }, [isPlaying, setIsPlaying, isUserScrollingShared]);
 
   const handleTouchEnd = useCallback(() => {
     if (!didScrollRef.current) {
       isUserScrolling.current = false;
       isUserScrollingShared.value = false;
     }
-  }, []);
+  }, [isUserScrollingShared]);
 
-  const handleScrollEndDrag = useCallback((event: any) => {
-    const { velocity, contentOffset, contentSize, layoutMeasurement } =
-      event.nativeEvent;
-    const isAtStart = contentOffset.x <= 0;
-    const isAtEnd =
-      contentOffset.x >= contentSize.width - layoutMeasurement.width;
+  const handleScrollEndDrag = useCallback(
+    (event: any) => {
+      const { velocity, contentOffset, contentSize, layoutMeasurement } =
+        event.nativeEvent;
+      const isAtStart = contentOffset.x <= 0;
+      const isAtEnd =
+        contentOffset.x >= contentSize.width - layoutMeasurement.width;
 
-    if (Math.abs(velocity?.x || 0) < 0.2 || isAtStart || isAtEnd) {
-      isUserScrolling.current = false;
-      isUserScrollingShared.value = false;
+      if (Math.abs(velocity?.x || 0) < 0.2 || isAtStart || isAtEnd) {
+        isUserScrolling.current = false;
+        isUserScrollingShared.value = false;
 
-      // Resume playback if it was playing before scrubbing (no momentum)
-      if (wasPlayingBeforeScrub.current) {
-        setTimeout(() => {
-          setIsPlaying(true);
-          wasPlayingBeforeScrub.current = false;
-        }, 50);
+        // Resume playback if it was playing before scrubbing (no momentum)
+        if (wasPlayingBeforeScrub.current) {
+          setTimeout(() => {
+            setIsPlaying(true);
+            wasPlayingBeforeScrub.current = false;
+          }, 50);
+        }
       }
-    }
-  }, [setIsPlaying]);
+    },
+    [setIsPlaying, isUserScrollingShared]
+  );
 
   const handleMomentumScrollEnd = useCallback(() => {
     isUserScrolling.current = false;
@@ -329,15 +350,18 @@ export const Timeline: React.FC<TimelineProps> = ({
         wasPlayingBeforeScrub.current = false;
       }, 50);
     }
-  }, [setIsPlaying]);
+  }, [setIsPlaying, isUserScrollingShared]);
 
   // Seek video function - defined early for use in animations
-  const seekVideo = useCallback((time: number) => {
-    setCurrentTime(time);
-    if (videoRef?.current) {
-      videoRef.current.seek(time);
-    }
-  }, [setCurrentTime, videoRef]);
+  const seekVideo = useCallback(
+    (time: number) => {
+      setCurrentTime(time);
+      if (videoRef?.current) {
+        videoRef.current.seek(time);
+      }
+    },
+    [setCurrentTime, videoRef]
+  );
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event: any) => {
@@ -369,7 +393,10 @@ export const Timeline: React.FC<TimelineProps> = ({
         // The timeline has padding that centers the playhead, so scrollX directly
         // represents the timeline position the playhead is pointing to
         const playheadPosition = current.scroll;
-        const clampedPosition = Math.max(0, Math.min(playheadPosition, timelineWidth));
+        const clampedPosition = Math.max(
+          0,
+          Math.min(playheadPosition, timelineWidth)
+        );
         const time = (clampedPosition / timelineWidth) * duration;
         const clampedTime = Math.max(0, Math.min(time, duration));
         runOnJS(seekVideo)(clampedTime);
@@ -690,6 +717,73 @@ export const Timeline: React.FC<TimelineProps> = ({
     transform: [{ translateX: -trimStart.value }],
   }));
 
+  // Text segment hooks - moved to component level
+  const isTextActive = activeSegment?.type === 'text';
+  const activeTextSegment = isTextActive
+    ? textSegments.find((seg) => seg.id === activeSegment.id)
+    : null;
+
+  // Animated styles for text trimming - moved to component level
+  const animatedTextTrimStyle = useAnimatedStyle(() => {
+    if (!isTextActive) return { opacity: 0, position: 'absolute' as const };
+    const width = activeTextTrimEnd.value - activeTextTrimStart.value;
+    return {
+      position: 'absolute' as const,
+      left: activeTextTrimStart.value,
+      width: Math.max(MIN_DURATION_PIXELS, width),
+      height: '100%',
+      borderWidth: 2,
+      borderColor: '#FFCC00',
+      borderRadius: 4,
+      opacity: 1,
+    };
+  });
+
+  const animatedTextLeftHandleStyle = useAnimatedStyle(() => {
+    if (!isTextActive) return { left: -1000 };
+    return {
+      position: 'absolute' as const,
+      left: activeTextTrimStart.value - HANDLE_WIDTH / 2,
+      top: 0,
+      width: HANDLE_WIDTH,
+      height: '100%',
+    };
+  });
+
+  const animatedTextRightHandleStyle = useAnimatedStyle(() => {
+    if (!isTextActive) return { left: -1000 };
+    return {
+      position: 'absolute' as const,
+      left: activeTextTrimEnd.value - HANDLE_WIDTH / 2,
+      top: 0,
+      width: HANDLE_WIDTH,
+      height: '100%',
+    };
+  });
+
+  // Memoized styles for text segments - moved to component level
+  const textSegmentNonActiveStyle = useMemo(
+    () => [styles.textSegmentNonActive, { opacity: isTextActive ? 0.3 : 0.8 }],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isTextActive]
+  );
+
+  const textSegmentActiveContainerStyle = useMemo(
+    () => [styles.textSegmentActiveContainer, { width: timelineWidth }],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [timelineWidth]
+  );
+
+  // Timeline width height style for trim track
+  const timelineWidthHeightStyle = useMemo(
+    () => ({ width: timelineWidth, height: '100%' }),
+    [timelineWidth]
+  );
+
+  const getThumbnailImageStyle = (thumbWidth: number) => ({
+    width: thumbWidth,
+  });
+
   const renderAudioSegments = () => {
     const hasAudioSegments = audioSegments.length > 0;
 
@@ -725,7 +819,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         </PressableWrapper>
       </View>
     ) : (
-      <View style={[styles.audioSegmentContainer, { width: timelineWidth }]}>
+      <View style={[styles.audioSegmentContainer, timelineWidthStyle]}>
         {audioSegments.map((segment) => {
           const isSegmentActive =
             activeSegment?.type === 'audio' && activeSegment?.id === segment.id;
@@ -756,8 +850,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                     key={`loop-${i}`}
                     style={[
                       styles.audioSegment,
+                      styles.audioLoopSegment,
                       {
-                        position: 'absolute',
                         left: i * clipWidth,
                         width: clipWidth,
                         backgroundColor: segment.color + '40',
@@ -806,8 +900,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                   <View
                     style={[
                       styles.audioSegment,
+                      styles.audioLoopSegment,
                       {
-                        position: 'absolute',
                         left: repeatCount * clipWidth,
                         width: remainderWidth,
                         backgroundColor: segment.color + '40',
@@ -887,7 +981,11 @@ export const Timeline: React.FC<TimelineProps> = ({
                     style={styles.deleteButton}
                     onPress={() => handleDeleteSegment('audio', segment.id)}
                   >
-                    <Image style={styles.deleteIcon} source={TrashIcon} tintColor={'#fff'}/>
+                    <Image
+                      style={styles.deleteIcon}
+                      source={TrashIcon}
+                      tintColor={'#fff'}
+                    />
                   </PressableWrapper>
                 )}
               </PressableWrapper>
@@ -926,7 +1024,11 @@ export const Timeline: React.FC<TimelineProps> = ({
                     style={styles.deleteButton}
                     onPress={() => handleDeleteSegment('audio', segment.id)}
                   >
-                    <Image style={styles.deleteIcon} source={TrashIcon} tintColor={'#fff'}/>
+                    <Image
+                      style={styles.deleteIcon}
+                      source={TrashIcon}
+                      tintColor={'#fff'}
+                    />
                   </PressableWrapper>
                 )}
               </PressableWrapper>
@@ -939,10 +1041,6 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const renderTextSegments = () => {
     const hasTextSegments = textSegments.length > 0;
-    const isTextActive = activeSegment?.type === 'text';
-    const activeTextSegment = isTextActive
-      ? textSegments.find((seg) => seg.id === activeSegment.id)
-      : null;
 
     const textLeftHandleGestureHandler = Gesture.Pan()
       .enabled(isTextActive && !!activeTextSegment)
@@ -1018,44 +1116,6 @@ export const Timeline: React.FC<TimelineProps> = ({
         runOnJS(setIsDraggingHandle)(false);
       });
 
-    // Animated styles
-    const animatedTextTrimStyle = useAnimatedStyle(() => {
-      if (!isTextActive) return { opacity: 0, position: 'absolute' as const };
-      const width = activeTextTrimEnd.value - activeTextTrimStart.value;
-      return {
-        position: 'absolute' as const,
-        left: activeTextTrimStart.value,
-        width: Math.max(MIN_DURATION_PIXELS, width),
-        height: '100%',
-        borderWidth: 2,
-        borderColor: '#FFCC00',
-        borderRadius: 4,
-        opacity: 1,
-      };
-    });
-
-    const animatedTextLeftHandleStyle = useAnimatedStyle(() => {
-      if (!isTextActive) return { left: -1000 };
-      return {
-        position: 'absolute' as const,
-        left: activeTextTrimStart.value - HANDLE_WIDTH / 2,
-        top: 0,
-        width: HANDLE_WIDTH,
-        height: '100%',
-      };
-    });
-
-    const animatedTextRightHandleStyle = useAnimatedStyle(() => {
-      if (!isTextActive) return { left: -1000 };
-      return {
-        position: 'absolute' as const,
-        left: activeTextTrimEnd.value - HANDLE_WIDTH / 2,
-        top: 0,
-        width: HANDLE_WIDTH,
-        height: '100%',
-      };
-    });
-
     // Show "Add text" button if no segments exist
     if (!hasTextSegments) {
       return (
@@ -1076,7 +1136,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
     // Render text segments
     return (
-      <View style={[styles.textSegmentsContainer, { width: timelineWidth }]}>
+      <View style={[styles.textSegmentsContainer, timelineWidthStyle]}>
         {textSegments.map((segment) => {
           const isActive = isTextActive && segment.id === activeSegment.id;
           const segStyle = getSegmentPosition(
@@ -1097,16 +1157,11 @@ export const Timeline: React.FC<TimelineProps> = ({
                 style={[
                   styles.textSegment,
                   segStyle,
-                  {
-                    position: 'absolute',
-                    backgroundColor: 'rgba(255, 204, 0, 0.2)',
-                    borderColor: '#FFCC00',
-                    opacity: isTextActive ? 0.3 : 0.8,
-                  },
+                  textSegmentNonActiveStyle,
                 ]}
               >
                 <Text
-                  style={[styles.segmentLabel, { color: '#FFCC00' }]}
+                  style={[styles.segmentLabel, styles.textSegmentLabel]}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
@@ -1121,31 +1176,18 @@ export const Timeline: React.FC<TimelineProps> = ({
           return (
             <View
               key={segment.id}
-              style={[
-                styles.textSegment,
-                {
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  width: timelineWidth,
-                  height: '100%',
-                },
-              ]}
+              style={[styles.textSegment, textSegmentActiveContainerStyle]}
             >
               {/* Main segment container */}
               <Animated.View style={animatedTextTrimStyle}>
                 <PressableWrapper
-                  style={{
-                    flex: 1,
-                    justifyContent: 'center',
-                    paddingHorizontal: 8,
-                  }}
+                  style={styles.textSegmentPressable}
                   onPress={() =>
                     handleSegmentPress({ type: 'text', id: segment.id })
                   }
                 >
                   <Text
-                    style={[styles.segmentLabel, { color: '#FFCC00' }]}
+                    style={[styles.segmentLabel, styles.textSegmentLabel]}
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
@@ -1159,7 +1201,11 @@ export const Timeline: React.FC<TimelineProps> = ({
                   style={styles.deleteButton}
                   onPress={() => handleDeleteSegment('text', segment.id)}
                 >
-                  <Image style={styles.deleteIcon} source={TrashIcon} tintColor={'#fff'}/>
+                  <Image
+                    style={styles.deleteIcon}
+                    source={TrashIcon}
+                    tintColor={'#fff'}
+                  />
                 </PressableWrapper>
               </Animated.View>
 
@@ -1175,7 +1221,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                   <View
                     style={[
                       styles.textTrimHandleVisual,
-                      { backgroundColor: '#FFCC00' },
+                      styles.textTrimHandleYellow,
                     ]}
                   >
                     {/* <View style={styles.trimHandleGrip} /> */}
@@ -1196,7 +1242,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                   <View
                     style={[
                       styles.textTrimHandleVisual,
-                      { backgroundColor: '#FFCC00' },
+                      styles.textTrimHandleYellow,
                     ]}
                   >
                     <View style={styles.trimHandleGrip} />
@@ -1248,9 +1294,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     }
 
     return (
-      <View
-        style={[styles.voiceoverSegmentsContainer, { width: timelineWidth }]}
-      >
+      <View style={[styles.voiceoverSegmentsContainer, timelineWidthStyle]}>
         {voiceoverSegments.map((segment) => {
           const isSegmentActive =
             activeSegment?.type === 'voiceover' &&
@@ -1272,15 +1316,11 @@ export const Timeline: React.FC<TimelineProps> = ({
               style={[
                 styles.voiceoverSegment,
                 segmentStyle,
-                {
-                  position: 'absolute',
-                  backgroundColor: 'rgba(52, 199, 89, 0.3)', // Green tint
-                  borderColor: '#34C759',
-                },
+                styles.voiceoverSegmentStyle,
               ]}
             >
               <Text
-                style={[styles.segmentLabel, { color: '#34C759' }]}
+                style={[styles.segmentLabel, styles.voiceoverSegmentLabel]}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
@@ -1292,7 +1332,11 @@ export const Timeline: React.FC<TimelineProps> = ({
                   style={styles.deleteButton}
                   onPress={() => handleDeleteSegment('voiceover', segment.id)}
                 >
-                  <Image style={styles.deleteIcon} source={TrashIcon} tintColor={'#fff'}/>
+                  <Image
+                    style={styles.deleteIcon}
+                    source={TrashIcon}
+                    tintColor={'#fff'}
+                  />
                 </PressableWrapper>
               )}
             </PressableWrapper>
@@ -1304,6 +1348,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const renderTrimTrack = () => {
     const isTrimActive = isTrimming || activeTool === 'trim';
+
     return (
       <View style={styles.trimTrackContainer}>
         {/* Mute/Unmute Button - Left side absolute position */}
@@ -1325,19 +1370,14 @@ export const Timeline: React.FC<TimelineProps> = ({
             onPress={handleTrimTrackPress}
             style={styles.trimTrackContent}
           >
-            <View style={{ width: timelineWidth, height: '100%' }}>
+            <View style={timelineWidthHeightStyle}>
               <View style={styles.timelineTrack}>
                 {isTrimActive ? (
                   <Animated.View
                     style={[styles.clippingView, animatedTrackClipStyle]}
                   >
                     <Animated.View style={animatedContentMoverStyle}>
-                      <View
-                        style={[
-                          styles.thumbnailStrip,
-                          { width: timelineWidth },
-                        ]}
-                      >
+                      <View style={[styles.thumbnailStrip, timelineWidthStyle]}>
                         {thumbnails.length > 0 ? (
                           thumbnails.map((thumb, i) => (
                             <FastImage
@@ -1346,28 +1386,21 @@ export const Timeline: React.FC<TimelineProps> = ({
                               resizeMode={FastImage.resizeMode.cover}
                               style={[
                                 styles.thumbnailImage,
-                                {
-                                  width: thumb.width,
-                                  backgroundColor: '#1a1a1a',
-                                },
+                                styles.thumbnailImageBg,
+                                getThumbnailImageStyle(thumb.width),
                               ]}
                             />
                           ))
                         ) : (
                           <View
-                            style={[
-                              styles.placeholder,
-                              { width: timelineWidth },
-                            ]}
+                            style={[styles.placeholder, timelineWidthStyle]}
                           />
                         )}
                       </View>
                     </Animated.View>
                   </Animated.View>
                 ) : (
-                  <View
-                    style={[styles.thumbnailStrip, { width: timelineWidth }]}
-                  >
+                  <View style={[styles.thumbnailStrip, timelineWidthStyle]}>
                     {thumbnails.length > 0 ? (
                       thumbnails.map((thumb, i) => (
                         <FastImage
@@ -1376,10 +1409,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                           resizeMode={FastImage.resizeMode.cover}
                           style={[
                             styles.thumbnailImage,
-                            {
-                              width: thumb.width,
-                              backgroundColor: '#1a1a1a',
-                            },
+                            styles.thumbnailImageBg,
+                            getThumbnailImageStyle(thumb.width),
                           ]}
                         />
                       ))
@@ -1523,13 +1554,16 @@ export const Timeline: React.FC<TimelineProps> = ({
           bounces={false}
         >
           <View
-            style={{
-              paddingHorizontal:
-                (SCREEN_WIDTH - TIMELINE_MARGIN_HORIZONTAL * 2) / 2,
-            }}
+            style={useMemo(
+              () => ({
+                paddingHorizontal:
+                  (SCREEN_WIDTH - TIMELINE_MARGIN_HORIZONTAL * 2) / 2,
+              }),
+              []
+            )}
           >
             <ScrollWrapper
-              style={{ overflow: 'visible' }}
+              style={styles.scrollWrapperVisible}
               showsVerticalScrollIndicator={false}
               onScrollBeginDrag={handleScrollBeginDrag}
               onTouchStart={handleTouchStart}

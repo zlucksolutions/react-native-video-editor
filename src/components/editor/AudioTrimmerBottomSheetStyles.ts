@@ -127,4 +127,11 @@ export const createAudioTrimmerStyles = (_theme?: any) =>
       overflow: 'hidden',
       marginLeft: '10@ms',
     },
+    hiddenVideo: {
+      width: 0,
+      height: 0,
+    },
+    ticksRowAndroid: {
+      overflow: 'hidden',
+    },
   });

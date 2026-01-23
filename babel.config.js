@@ -1,7 +1,4 @@
 /** @type {import('react-native-worklets/plugin').PluginOptions} */
-const workletsPluginOptions = {
-  // Your custom options.
-};
 
 module.exports = {
   overrides: [

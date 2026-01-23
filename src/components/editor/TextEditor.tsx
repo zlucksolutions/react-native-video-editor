@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -24,8 +24,6 @@ import Animated, {
   withTiming,
   // @ts-ignore - Peer dependency
 } from 'react-native-reanimated';
-// @ts-ignore - Peer dependency
-import { ScaledSheet } from 'react-native-size-matters';
 import { FONT_SIZE_MIN, FONT_SIZE_MAX } from '../../constants/dimensions';
 import { createTextEditorStyles } from './TextEditorStyles';
 import type { TextSegment } from '../../types/segments';
@@ -67,7 +65,7 @@ const FontSizeSlider: React.FC<FontSizeSliderProps> = ({
       sliderHeight -
       ((fontSize - minFontSize) / (maxFontSize - minFontSize)) * sliderHeight;
     sliderY.value = withTiming(newY);
-  }, [fontSize, sliderY]);
+  }, [fontSize, sliderY, minFontSize, maxFontSize]);
 
   const sliderGesture = Gesture.Pan()
     .onStart(() => {
@@ -288,6 +286,28 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     color: isCursorVisible ? textColor : 'transparent',
   };
 
+  const bottomContainerDynamicStyle = useMemo(
+    () =>
+      isKeyboardActive
+        ? {
+            bottom: Platform.OS === 'ios' ? keyboardHeight : 10,
+          }
+        : { bottom: 18 },
+    [isKeyboardActive, keyboardHeight]
+  );
+
+  const bottomContainerIOSPaddingStyle = useMemo(
+    () =>
+      Platform.OS === 'ios' && !isKeyboardActive
+        ? { paddingBottom: insets.bottom }
+        : {},
+    [isKeyboardActive, insets.bottom]
+  );
+
+  const getBackgroundColorCircleStyle = (color: string) => ({
+    backgroundColor: color === 'transparent' ? '#333333' : color,
+  });
+
   return (
     <View style={styles.overlay}>
       <TextInput
@@ -334,13 +354,8 @@ export const TextEditor: React.FC<TextEditorProps> = ({
       <View
         style={[
           styles.bottomContainer,
-          isKeyboardActive
-            ? {
-                bottom: Platform.OS === 'ios' ? keyboardHeight : 10,
-              }
-            : { bottom: 18 },
-          Platform.OS === 'ios' &&
-            !isKeyboardActive && { paddingBottom: insets.bottom },
+          bottomContainerDynamicStyle,
+          bottomContainerIOSPaddingStyle,
         ]}
       >
         <View style={styles.colorPicker}>
@@ -377,17 +392,13 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                   onPress={() => setBackgroundColor(color)}
                   style={[
                     styles.colorCircle,
-                    {
-                      backgroundColor:
-                        color === 'transparent' ? '#333333' : color,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    },
+                    styles.colorCircleCentered,
+                    getBackgroundColorCircleStyle(color),
                     backgroundColor === color && styles.selectedColor,
                   ]}
                 >
                   {color === 'transparent' && (
-                    <Text style={{ color: '#fff', fontSize: 12 }}>✕</Text>
+                    <Text style={styles.transparentIcon}>✕</Text>
                   )}
                 </PressableWrapper>
               ))}

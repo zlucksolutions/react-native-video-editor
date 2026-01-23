@@ -148,4 +148,12 @@ export const createTextEditorStyles = () =>
       tintColor: '#FFFFFF',
       resizeMode: 'contain',
     },
+    colorCircleCentered: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    transparentIcon: {
+      color: '#fff',
+      fontSize: '12@ms',
+    },
   });

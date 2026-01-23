@@ -362,4 +362,43 @@ export const createTimelineStyles = () =>
       borderRadius: '1@ms',
       backgroundColor: '#FFFFFF',
     },
+    textSegmentNonActive: {
+      position: 'absolute',
+      backgroundColor: 'rgba(255, 204, 0, 0.2)',
+      borderColor: '#FFCC00',
+    },
+    textSegmentActiveContainer: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      height: '100%',
+    },
+    textSegmentPressable: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: '8@ms',
+    },
+    textSegmentLabel: {
+      color: '#FFCC00',
+    },
+    textTrimHandleYellow: {
+      backgroundColor: '#FFCC00',
+    },
+    voiceoverSegmentStyle: {
+      position: 'absolute',
+      backgroundColor: 'rgba(52, 199, 89, 0.3)',
+      borderColor: '#34C759',
+    },
+    voiceoverSegmentLabel: {
+      color: '#34C759',
+    },
+    thumbnailImageBg: {
+      backgroundColor: '#1a1a1a',
+    },
+    scrollWrapperVisible: {
+      overflow: 'visible',
+    },
+    audioLoopSegment: {
+      position: 'absolute',
+    },
   });

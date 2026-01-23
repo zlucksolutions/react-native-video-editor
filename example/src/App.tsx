@@ -53,12 +53,10 @@ export default function App() {
         editVoiceOver: true,
       });
 
-
       // Check if editing was successful
       if (result.success && result.exportedUri) {
         // Store the exported video URI
         setExportedVideoUri(result.exportedUri);
-
 
         // Show success alert with the URI
         Alert.alert(
@@ -72,8 +70,8 @@ export default function App() {
       } else if (!result.success) {
         Alert.alert('Export Failed', result.error || 'Unknown error');
       }
-    } catch (e) {
-      Alert.alert('Error', 'Failed to open video editor');
+    } catch (e: any) {
+      Alert.alert('Error', 'Failed to open video editor', e.message || e);
     }
   };
 

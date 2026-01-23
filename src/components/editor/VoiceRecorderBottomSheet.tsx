@@ -79,18 +79,7 @@ export const VoiceRecorderBottomSheet: React.FC<
   videoDuration,
   voiceoverSegments = [],
 }) => {
-  // Check if dependencies are available
-  if (!Sound || !RNFS) {
-    if (isVisible) {
-      Alert.alert(
-        'Dependencies Missing',
-        'Voice recording requires react-native-nitro-sound and react-native-fs to be installed and linked. Please install these dependencies and rebuild your app.'
-      );
-      onClose();
-    }
-    return null;
-  }
-
+  // All hooks must be called before any early returns
   const pulse = useSharedValue(1);
 
   const [isRecording, setIsRecording] = useState(false);
@@ -117,8 +106,8 @@ export const VoiceRecorderBottomSheet: React.FC<
       try {
         Sound.stopRecorder();
         Sound.removeRecordBackListener();
-      } catch (e) {
-        console.warn('Cleanup error:', e);
+      } catch {
+        // Ignore cleanup errors
       }
     };
   }, []);
@@ -129,7 +118,7 @@ export const VoiceRecorderBottomSheet: React.FC<
       // Clean up listener when not recording and sheet is closed
       try {
         Sound.removeRecordBackListener();
-      } catch (e) {
+      } catch {
         // Ignore cleanup errors
       }
     }
@@ -159,7 +148,7 @@ export const VoiceRecorderBottomSheet: React.FC<
     try {
       Sound.removeRecordBackListener();
       await Sound.stopRecorder();
-    } catch (e) {
+    } catch {
       // ignore
     }
   };
@@ -195,7 +184,7 @@ export const VoiceRecorderBottomSheet: React.FC<
       setIsRecording(false);
       setRecordingDuration(recordTime);
       setRecordedAudioUri(resultUri);
-    } catch (error: any) {
+    } catch {
       // handle error
     } finally {
       setIsStoppingRecord(false);
@@ -233,7 +222,9 @@ export const VoiceRecorderBottomSheet: React.FC<
       const documentsDir = deviceUtils.isAndroid
         ? RNFS.DocumentDirectoryPath
         : RNFS.CachesDirectoryPath;
-      const targetPath = deviceUtils.isAndroid ? makeRecordingPath() : undefined;
+      const targetPath = deviceUtils.isAndroid
+        ? makeRecordingPath()
+        : undefined;
 
       try {
         const exists = await RNFS.exists(documentsDir);
@@ -293,42 +284,6 @@ export const VoiceRecorderBottomSheet: React.FC<
     }
   }, [maxRecordingDurationMs, onStopRecord]);
 
-  const handleToggleRecording = useCallback(async () => {
-    if (isStartingRecord || isStoppingRecord) {
-      return;
-    }
-
-    if (isRecording) {
-      await onStopRecord();
-      // Automatically trigger Done after stopping
-      const timeoutId = setTimeout(() => {
-        if (recordedAudioUri || recordTime > 0) {
-          handleDone();
-        }
-      }, 100);
-
-      // Store timeout ID for cleanup
-      return () => clearTimeout(timeoutId);
-    } else {
-      onStartRecord();
-    }
-  }, [
-    isStartingRecord,
-    isStoppingRecord,
-    isRecording,
-    onStartRecord,
-    onStopRecord,
-    recordedAudioUri,
-    recordTime,
-  ]);
-
-  const formatTime = useCallback((timeInMillis: number) => {
-    const totalSeconds = Math.floor(timeInMillis / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  }, []);
-
   const resetRecordingState = useCallback(() => {
     setRecordTime(0);
     setIsRecording(false);
@@ -370,6 +325,42 @@ export const VoiceRecorderBottomSheet: React.FC<
     onClose,
   ]);
 
+  const handleToggleRecording = useCallback(async (): Promise<void> => {
+    if (isStartingRecord || isStoppingRecord) {
+      return;
+    }
+
+    if (isRecording) {
+      await onStopRecord();
+      // Automatically trigger Done after stopping
+      setTimeout(() => {
+        if (recordedAudioUri || recordTime > 0) {
+          handleDone();
+        }
+      }, 100);
+      return;
+    } else {
+      await onStartRecord();
+      return;
+    }
+  }, [
+    isStartingRecord,
+    isStoppingRecord,
+    isRecording,
+    onStartRecord,
+    onStopRecord,
+    recordedAudioUri,
+    recordTime,
+    handleDone,
+  ]);
+
+  const formatTime = useCallback((timeInMillis: number) => {
+    const totalSeconds = Math.floor(timeInMillis / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }, []);
+
   const handleCancel = useCallback(() => {
     if (isRecording) {
       Sound.stopRecorder();
@@ -396,6 +387,18 @@ export const VoiceRecorderBottomSheet: React.FC<
   };
 
   const statusMessage = getStatusMessage();
+
+  // Check if dependencies are available - must be after all hooks
+  if (!Sound || !RNFS) {
+    if (isVisible) {
+      Alert.alert(
+        'Dependencies Missing',
+        'Voice recording requires react-native-nitro-sound and react-native-fs to be installed and linked. Please install these dependencies and rebuild your app.'
+      );
+      onClose();
+    }
+    return null;
+  }
 
   if (!isVisible) return null;
 

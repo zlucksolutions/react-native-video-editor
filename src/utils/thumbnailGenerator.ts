@@ -51,10 +51,10 @@ export const generateThumbnails = async (
     const mediaUriHash =
       videoUri && typeof videoUri === 'string'
         ? videoUri
-          .split('/')
-          .pop()
-          ?.replace(/[^a-zA-Z0-9]/g, '_')
-          .substring(0, 20) || 'video'
+            .split('/')
+            .pop()
+            ?.replace(/[^a-zA-Z0-9]/g, '_')
+            .substring(0, 20) || 'video'
         : 'video';
 
     const startTimeMs =
@@ -104,7 +104,9 @@ export const generateThumbnails = async (
             })
             .catch((err: any) => {
               console.error(
-                `❌ [Thumbnails] Failed to generate thumbnail at ${Math.floor(timeStampMs)}ms`,
+                `❌ [Thumbnails] Failed to generate thumbnail at ${Math.floor(
+                  timeStampMs
+                )}ms`,
                 {
                   error: err?.message || err,
                   errorCode: err?.code || 'unknown',
@@ -185,10 +187,10 @@ export const regenerateThumbnailsForTrim = async (
     const mediaUriHash =
       videoUri && typeof videoUri === 'string'
         ? videoUri
-          .split('/')
-          .pop()
-          ?.replace(/[^a-zA-Z0-9]/g, '_')
-          .substring(0, 20) || 'video'
+            .split('/')
+            .pop()
+            ?.replace(/[^a-zA-Z0-9]/g, '_')
+            .substring(0, 20) || 'video'
         : 'video';
 
     const newTimelineWidth = getTimelineWidth(duration);
@@ -231,17 +233,14 @@ export const regenerateThumbnailsForTrim = async (
               throw new Error('Invalid thumbnail path');
             })
             .catch((err: any) => {
-              console.error(
-                `❌ [Trim Thumbnails] Failed at ${timeStampMs}ms`,
-                {
-                  error: err?.message || err,
-                  errorCode: err?.code || 'unknown',
-                  platform: Platform.OS,
-                  originalUri: videoUri,
-                  normalizedUri: normalizedUri,
-                  index,
-                }
-              );
+              console.error(`❌ [Trim Thumbnails] Failed at ${timeStampMs}ms`, {
+                error: err?.message || err,
+                errorCode: err?.code || 'unknown',
+                platform: Platform.OS,
+                originalUri: videoUri,
+                normalizedUri: normalizedUri,
+                index,
+              });
               return {
                 uri: '',
                 width: thumbnailPixelWidth,

@@ -35,7 +35,10 @@ type BottomToolBarProps = {
   onExport?: () => void;
 };
 
-export const BottomToolBar = ({ onToolPress, onExport }: BottomToolBarProps) => {
+export const BottomToolBar = ({
+  onToolPress,
+  onExport,
+}: BottomToolBarProps) => {
   const { setActiveTool, enabledTools, activeTool } = useEditorContext();
   const {
     setAudioUri,

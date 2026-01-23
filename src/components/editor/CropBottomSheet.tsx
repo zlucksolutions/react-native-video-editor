@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -41,24 +41,23 @@ const AspectRatioIcon: React.FC<AspectRatioIconProps> = ({
 }) => {
   const isOriginal = label === 'Original';
 
+  const originalIconBoxStyle = useMemo(
+    () => [
+      styles.originalIconBox,
+      isSelected
+        ? styles.originalIconBoxSelected
+        : styles.originalIconBoxUnselected,
+    ],
+    [isSelected, styles]
+  );
+
   if (isOriginal) {
     return (
       <View
         style={isSelected ? styles.selectedIconContainer : styles.iconContainer}
       >
         <View style={[styles.iconBox, isSelected && styles.selectedIconBox]}>
-          <View
-            style={[
-              {
-                width: 24,
-                height: 24,
-                borderRadius: 4,
-                borderWidth: 1.5,
-                borderColor: isSelected ? '#00ff88' : '#bebebe',
-                backgroundColor: isSelected ? '#00ff88' : 'transparent',
-              },
-            ]}
-          />
+          <View style={originalIconBoxStyle} />
         </View>
       </View>
     );

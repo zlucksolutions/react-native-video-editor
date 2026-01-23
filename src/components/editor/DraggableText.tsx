@@ -100,7 +100,7 @@ export const DraggableText: React.FC<DraggableTextProps> = ({
           hapticModule('impactMedium');
         }
       }
-    } catch (e) {
+    } catch {
       // Haptic feedback not available, ignore
     }
   };

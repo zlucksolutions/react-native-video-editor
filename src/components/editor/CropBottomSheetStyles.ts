@@ -1,5 +1,6 @@
 // @ts-ignore - Peer dependency
 import { ScaledSheet } from 'react-native-size-matters';
+import { StyleSheet } from 'react-native';
 
 export const createCropBottomSheetStyles = () =>
   ScaledSheet.create({
@@ -139,7 +140,18 @@ export const createCropBottomSheetStyles = () =>
     selectedOriginalIcon: {
       tintColor: '#00ff88',
     },
+    originalIconBox: {
+      width: '24@ms',
+      height: '24@ms',
+      borderRadius: 4,
+      borderWidth: 1.5,
+    },
+    originalIconBoxSelected: {
+      borderColor: '#00ff88',
+      backgroundColor: '#00ff88',
+    },
+    originalIconBoxUnselected: {
+      borderColor: '#bebebe',
+      backgroundColor: 'transparent',
+    },
   });
-
-// Need to import StyleSheet
-import { StyleSheet } from 'react-native';

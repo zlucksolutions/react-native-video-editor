@@ -5,7 +5,14 @@ import React, {
   useCallback,
   useMemo,
 } from 'react';
-import { View, Text, Dimensions, Pressable, Platform, Image } from 'react-native';
+import {
+  View,
+  Text,
+  Dimensions,
+  Pressable,
+  Platform,
+  Image,
+} from 'react-native';
 // @ts-ignore - Peer dependency
 import Video from 'react-native-video';
 // @ts-ignore - Peer dependency
@@ -25,7 +32,7 @@ import {
 import { useEditorState } from '../../context/EditorStateContext';
 import { createAudioTrimmerStyles } from './AudioTrimmerBottomSheetStyles';
 import { deviceUtils } from '../../utils/deviceUtils';
-  // @ts-ignore - Peer dependency
+// @ts-ignore - Peer dependency
 import { LoopCycleIcon } from '../../assets/icons/index.js';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -357,10 +364,7 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
     },
   });
 
-  if (!info) {
-    return null;
-  }
-
+  // Calculate values before early return
   const isScrollable = audioDuration > maxDuration;
 
   let waveformTotalWidth;
@@ -380,16 +384,39 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
         100
       : 0;
 
+  // All hooks must be called before any early returns
+  const contentContainerStyle = useMemo(
+    () => ({
+      paddingLeft: isScrollable ? SCROLL_PADDING : 0,
+      paddingRight: isScrollable ? SCROLL_PADDING : 0,
+    }),
+    [isScrollable, SCROLL_PADDING]
+  );
+
+  const waveformViewStyle = useMemo(
+    () => ({
+      width: waveformTotalWidth,
+    }),
+    [waveformTotalWidth]
+  );
+
   const TicksWrapper = isShortAudio ? View : React.Fragment;
-  const wrapperProps = isShortAudio
-    ? {
-        style: {
-          width: SELECT_WIDTH,
-          alignSelf: 'center' as const,
-          overflow: 'hidden' as const,
-        },
-      }
-    : {};
+  const wrapperStyle = useMemo(
+    () =>
+      isShortAudio
+        ? {
+            width: SELECT_WIDTH,
+            alignSelf: 'center' as const,
+            overflow: 'hidden' as const,
+          }
+        : undefined,
+    [isShortAudio]
+  );
+  const wrapperProps = isShortAudio ? { style: wrapperStyle } : {};
+
+  if (!info) {
+    return null;
+  }
 
   return (
     <Animated.View style={[styles.trimmerContainer, style]}>
@@ -406,10 +433,10 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
                 end={{ x: 1, y: 0 }}
                 style={styles.loopIconGradient}
               >
-                <Image style={styles.loopIconText} source={LoopCycleIcon}/>
+                <Image style={styles.loopIconText} source={LoopCycleIcon} />
               </LinearGradient>
             ) : (
-              <Image style={styles.loopIconText} source={LoopCycleIcon}/>
+              <Image style={styles.loopIconText} source={LoopCycleIcon} />
             )}
           </Pressable>
         )}
@@ -423,13 +450,10 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
             showsHorizontalScrollIndicator={false}
             onScroll={scrollHandler}
             scrollEnabled={isScrollable}
-            contentContainerStyle={{
-              paddingLeft: isScrollable ? SCROLL_PADDING : 0,
-              paddingRight: isScrollable ? SCROLL_PADDING : 0,
-            }}
+            contentContainerStyle={contentContainerStyle}
             scrollEventThrottle={16}
           >
-            <View style={{ width: waveformTotalWidth }}>
+            <View style={waveformViewStyle}>
               <TimelineTicks
                 waveformWidth={waveformTotalWidth}
                 barWidth={BAR_WIDTH}
@@ -481,7 +505,7 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
           ignoreSilentSwitch="ignore"
           onProgress={handleInternalProgress}
           progressUpdateInterval={50}
-          style={{ width: 0, height: 0 }}
+          style={styles.hiddenVideo}
         />
       )}
     </Animated.View>
@@ -504,6 +528,25 @@ const TimelineTicks = React.memo(
       waveformWidth > 0 ? Math.floor(waveformWidth / totalBarWidth) : 0;
 
     const barColor = 'rgba(255, 255, 255, 0.5)';
+
+    const ticksRowWidthStyle = useMemo(
+      () => ({
+        width: barCount * totalBarWidth,
+      }),
+      [barCount, totalBarWidth]
+    );
+
+    const ticksRowWaveformStyle = useMemo(
+      () => ({
+        width: waveformWidth,
+      }),
+      [waveformWidth]
+    );
+
+    const ticksRowAndroidStyle = useMemo(
+      () => (deviceUtils.isAndroid ? styles.ticksRowAndroid : {}),
+      [styles.ticksRowAndroid]
+    );
 
     const ticks = React.useMemo(() => {
       if (!isScrollable && isLooped) {
@@ -541,17 +584,11 @@ const TimelineTicks = React.memo(
     ]);
 
     if (barCount === 0) {
-      return <View style={[styles.ticksRow, { width: waveformWidth }]} />;
+      return <View style={[styles.ticksRow, ticksRowWaveformStyle]} />;
     }
 
     return (
-      <View
-        style={[
-          styles.ticksRow,
-          { width: barCount * totalBarWidth },
-          deviceUtils.isAndroid && { overflow: 'hidden' },
-        ]}
-      >
+      <View style={[styles.ticksRow, ticksRowWidthStyle, ticksRowAndroidStyle]}>
         {ticks.map((height: number, i: number) => (
           <View
             key={i}

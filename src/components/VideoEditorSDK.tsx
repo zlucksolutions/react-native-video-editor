@@ -6,8 +6,6 @@ import {
   Dimensions,
   StatusBar,
   Image,
-  NativeModules,
-  Platform,
 } from 'react-native';
 
 import {
@@ -140,7 +138,9 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
   const [toolBarHeight, setToolBarHeight] = useState(0);
   const [isTimelineVisible, setIsTimelineVisible] = useState(false);
   const safeMargin = deviceUtils.isSmallIphone() ? 30 : 0;
-  const safeSpaceBottom = deviceUtils.isIOS ? toolBarHeight / 3 : toolBarHeight / 1.5;
+  const safeSpaceBottom = deviceUtils.isIOS
+    ? toolBarHeight / 3
+    : toolBarHeight / 1.5;
 
   // Animation values
   const layoutAnimation = useSharedValue(0);
@@ -169,7 +169,18 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
     return () => {
       resetEditor();
     };
-  }, [editTrim, source]);
+  }, [
+    editTrim,
+    editCrop,
+    editBGM,
+    editTextOverlay,
+    editVoiceOver,
+    initEditor,
+    onCloseEditor,
+    resetEditor,
+    source,
+    sourceUri,
+  ]);
 
   const handleExport = useCallback(async () => {
     try {
@@ -189,7 +200,12 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
         error: e?.message ?? 'Export failed',
       });
     }
-  }, [buildExportConfig, onCloseEditor, isTimelineVisible, setIsTimelineVisible]);
+  }, [
+    buildExportConfig,
+    onCloseEditor,
+    isTimelineVisible,
+    setIsTimelineVisible,
+  ]);
 
   // Animation effects
   useEffect(() => {
@@ -335,9 +351,13 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
     return deviceUtils.isSmallIphone()
       ? 5
       : containerHeight > 0
-      ? containerHeight - PREVIEW_HEIGHT - safeTop - safeBottom + safeMarginBottom
+      ? containerHeight -
+        PREVIEW_HEIGHT -
+        safeTop -
+        safeBottom +
+        safeMarginBottom
       : 0;
-  }, [containerHeight]);
+  }, [containerHeight, safeBottom, safeTop, safeMarginBottom]);
 
   const toolsSectionAnimatedStyle = useAnimatedStyle(() => {
     const translateY = interpolate(
@@ -521,10 +541,7 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
             swipeIndicatorAnimatedStyle,
             {
               bottom:
-                containerHeight -
-                PREVIEW_HEIGHT +
-                safeSpaceBottom  +
-                safeMargin,
+                containerHeight - PREVIEW_HEIGHT + safeSpaceBottom + safeMargin,
             },
           ]}
         >
@@ -618,7 +635,9 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
                   duration
                 );
                 const newVoiceoverSegment: VoiceoverSegment = {
-                  id: `voiceover-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                  id: `voiceover-${Date.now()}-${Math.random()
+                    .toString(36)
+                    .substr(2, 9)}`,
                   type: 'voiceover',
                   start: voiceoverData.start,
                   end: endTime,
@@ -692,7 +711,9 @@ export const VideoEditorSDK: React.FC<VideoEditorSDKProps> = (props) => {
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const TOOLS_SECTION_HEIGHT = 140;
-const TIMELINE_SECTION_HEIGHT = deviceUtils.isAndroid ? SCREEN_HEIGHT * 0.30 : SCREEN_HEIGHT * 0.32;
+const TIMELINE_SECTION_HEIGHT = deviceUtils.isAndroid
+  ? SCREEN_HEIGHT * 0.3
+  : SCREEN_HEIGHT * 0.32;
 
 const styles = ScaledSheet.create({
   safeArea: {
