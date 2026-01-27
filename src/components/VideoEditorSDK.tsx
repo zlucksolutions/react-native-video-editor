@@ -137,7 +137,7 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
   const [containerHeight, setContainerHeight] = useState(0);
   const [toolBarHeight, setToolBarHeight] = useState(0);
   const [isTimelineVisible, setIsTimelineVisible] = useState(false);
-  const safeMargin = deviceUtils.isSmallIphone() ? 30 : 0;
+  const safeMargin = deviceUtils.isSmallIphone() ? toolBarHeight / 1.6 : 0;
   const safeSpaceBottom = deviceUtils.isIOS
     ? toolBarHeight / 3
     : toolBarHeight / 1.5;
@@ -349,7 +349,7 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
   const safeMarginBottom = deviceUtils.isIOS ? 5 : -25;
   const bottomValue = useMemo(() => {
     return deviceUtils.isSmallIphone()
-      ? 5
+      ? 0
       : containerHeight > 0
       ? containerHeight -
         PREVIEW_HEIGHT -
@@ -774,7 +774,6 @@ const styles = ScaledSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    height: TOOLS_SECTION_HEIGHT,
     justifyContent: 'center',
     zIndex: '20@ms',
   },

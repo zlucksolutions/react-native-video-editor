@@ -1,4 +1,5 @@
 import { Dimensions, Platform } from 'react-native';
+import { deviceUtils } from '../utils/deviceUtils';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -16,7 +17,9 @@ export const PREVIEW_WIDTH = SCREEN_WIDTH;
 export const PREVIEW_HEIGHT = PREVIEW_WIDTH / PREVIEW_ASPECT_RATIO;
 
 // Small Preview (when timeline is visible)
-export const SMALL_PREVIEW_WIDTH = SCREEN_WIDTH * 0.55;
+export const SMALL_PREVIEW_WIDTH = deviceUtils.isSmallIphone()
+  ? SCREEN_WIDTH * 0.44
+  : SCREEN_WIDTH * 0.55;
 export const SMALL_PREVIEW_HEIGHT = SMALL_PREVIEW_WIDTH / PREVIEW_ASPECT_RATIO;
 
 // Section Heights
