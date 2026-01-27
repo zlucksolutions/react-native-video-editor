@@ -52,6 +52,7 @@ export const PreviewArea: React.FC<Props> = ({
   const {
     setCurrentTime,
     setDuration,
+    setOriginalDuration,
     getTrim,
     getPlaybackState,
     isScrubbing,
@@ -250,7 +251,12 @@ export const PreviewArea: React.FC<Props> = ({
           paused={!isPlaying}
           controls={false}
           onLoad={(e: OnLoadData) => {
-            setDuration(e.duration);
+            setOriginalDuration(e.duration);
+            const { duration: currentDuration } = getPlaybackState();
+            // Only initialize duration if it's not already set (e.g., after a trim)
+            if (currentDuration === 0) {
+              setDuration(e.duration);
+            }
             if (e.naturalSize) {
               setVideoNaturalSize({
                 width: e.naturalSize.width,
@@ -260,26 +266,39 @@ export const PreviewArea: React.FC<Props> = ({
           }}
           onProgress={(e: OnProgressData) => {
             const { start, end } = getTrim();
-            let time = e.currentTime;
+            const { originalDuration } = getPlaybackState();
+            let absoluteTime = e.currentTime;
 
             // Handle trim boundaries - loop back to start when reaching end
+            // Use absolute seconds for boundaries
+            const absoluteStartTime = start;
+            const absoluteEndTime = Math.min(
+              end,
+              originalDuration || e.seekableDuration
+            );
+
             if (
               !isScrubbing &&
               !isDraggingHandle &&
-              time > end * e.seekableDuration
+              absoluteTime >= absoluteEndTime
             ) {
-              videoRef.current?.seek(start * e.seekableDuration);
-              time = start * e.seekableDuration;
+              videoRef.current?.seek(absoluteStartTime);
+              absoluteTime = absoluteStartTime;
             }
 
             // Calculate volume ducking based on active segments
+            // Use relative time for segment mapping
+            const relativeTime = Math.max(0, absoluteTime - absoluteStartTime);
+
             const isVoiceoverActive =
               voiceoverSegments?.some(
-                (seg: any) => time >= seg.start && time < seg.end
+                (seg: any) =>
+                  relativeTime >= seg.start && relativeTime < seg.end
               ) || false;
             const isBgMusicActive =
               audioSegments?.some(
-                (seg: any) => time >= seg.start && time < seg.end
+                (seg: any) =>
+                  relativeTime >= seg.start && relativeTime < seg.end
               ) || false;
 
             // Apply volume rules: mute -> 0, voiceover -> 0.15, bgm -> 0.46, normal -> 1.0
@@ -296,7 +315,7 @@ export const PreviewArea: React.FC<Props> = ({
             // Always update timeline position during playback
             // Only skip update if user is actively scrubbing or dragging (to prevent feedback loop)
             if (!isScrubbing && !isDraggingHandle) {
-              setCurrentTime(time);
+              setCurrentTime(relativeTime);
             }
           }}
           progressUpdateInterval={100}

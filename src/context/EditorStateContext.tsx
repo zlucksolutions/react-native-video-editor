@@ -62,7 +62,12 @@ type EditorStateContextValue = {
   setCropRatio: (ratio: CropRatio) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
-  getPlaybackState: () => { currentTime: number; duration: number };
+  setOriginalDuration: (duration: number) => void;
+  getPlaybackState: () => {
+    currentTime: number;
+    duration: number;
+    originalDuration: number;
+  };
   isScrubbing: boolean;
   startScrubbing: () => void;
   stopScrubbing: () => void;
@@ -136,6 +141,7 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [currentTime, setCurrentTimeState] = useState(0);
   const [duration, setDurationState] = useState(0);
+  const [originalDuration, setOriginalDurationState] = useState(0);
   const [videoNaturalSize, setVideoNaturalSize] = useState<{
     width: number;
     height: number;
@@ -237,7 +243,7 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
 
   const trimRef = useRef<{ start: number; end: number }>({
     start: 0,
-    end: 1,
+    end: Number.MAX_SAFE_INTEGER,
   });
 
   const setTrim = useCallback(
@@ -263,12 +269,17 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
     setDurationState(durationValue);
   }, []);
 
+  const setOriginalDuration = useCallback((durationValue: number) => {
+    setOriginalDurationState(durationValue);
+  }, []);
+
   const getPlaybackState = useCallback(
     () => ({
       currentTime,
       duration,
+      originalDuration,
     }),
-    [currentTime, duration]
+    [currentTime, duration, originalDuration]
   );
 
   const setAudioTrim = useCallback(
@@ -683,6 +694,7 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
         setCropRatio,
         setCurrentTime,
         setDuration,
+        setOriginalDuration,
         getPlaybackState,
         isScrubbing,
         startScrubbing,
