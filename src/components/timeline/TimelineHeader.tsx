@@ -4,8 +4,13 @@ import { View, Text, Pressable } from 'react-native';
 import { ScaledSheet } from 'react-native-size-matters';
 import { COLORS } from '../../constants/colors';
 import { Image } from 'react-native';
-// @ts-ignore - Peer dependency
-import { PauseFilledIcon, PlayFilledIcon } from '../../assets/icons/index.js';
+import {
+  PauseFilledIcon,
+  PlayFilledIcon,
+  TickThickIcon,
+  CloseIcon,
+  // @ts-ignore - Peer dependency
+} from '../../assets/icons/index.js';
 
 interface TimelineHeaderProps {
   currentTime: number;
@@ -52,14 +57,18 @@ export const TimelineHeader: React.FC<TimelineHeaderProps> = ({
       {isTrimming ? (
         <View style={styles.trimActionsContainer}>
           <Pressable onPress={onCancelTrim} style={styles.trimButtonSmall}>
-            <Text style={styles.trimButtonText}>✕</Text>
+            <Image
+              style={styles.trimCancleIcon}
+              tintColor="#fff"
+              source={CloseIcon}
+            />
           </Pressable>
           <Pressable onPress={onConfirmTrim} style={styles.trimButtonSmall}>
-            <Text
-              style={[styles.trimButtonText, { color: COLORS.PRIMARY_YELLOW }]}
-            >
-              ✓
-            </Text>
+            <Image
+              source={TickThickIcon}
+              tintColor={COLORS.PRIMARY_YELLOW}
+              style={[styles.trimIcon]}
+            />
           </Pressable>
         </View>
       ) : (
@@ -116,10 +125,15 @@ const styles = ScaledSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  trimButtonText: {
-    fontSize: '16@ms',
-    color: '#fff',
-    fontWeight: '600',
+  trimIcon: {
+    width: '14@ms',
+    height: '14@ms',
+    resizeMode: 'contain',
+  },
+  trimCancleIcon: {
+    width: '12@ms',
+    height: '12@ms',
+    resizeMode: 'contain',
   },
   collapseButton: {
     width: '32@ms',

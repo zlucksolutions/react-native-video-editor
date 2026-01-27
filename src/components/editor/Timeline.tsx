@@ -594,9 +594,9 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Gesture handlers for trim handles
   const leftHandleGesture = Gesture.Pan()
-    .activeOffsetX([-10, 10])
-    .failOffsetY([-10, 10])
-    .hitSlop({ horizontal: 20, vertical: 20 })
+    .activeOffsetX([-5, 5])
+    .failOffsetY([-15, 15])
+    .hitSlop({ horizontal: 30, vertical: 30 })
     .onStart(() => {
       startX.value = trimStart.value;
       runOnJS(setIsPlaying)(false);
@@ -700,9 +700,13 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const TRIM_HANDLE_WIDTH = moderateScale(30);
 
-  const animatedLeftHandleStyle = useAnimatedStyle(() => ({
-    left: trimStart.value - TRIM_HANDLE_WIDTH / 2,
-  }));
+  const animatedLeftHandleStyle = useAnimatedStyle(() => {
+    const handleLeft = trimStart.value - TRIM_HANDLE_WIDTH / 2;
+    // Allow handle to extend beyond 0 for proper centering, parent containers now allow overflow
+    return {
+      left: handleLeft,
+    };
+  });
 
   const animatedRightHandleStyle = useAnimatedStyle(() => ({
     left: trimEnd.value - TRIM_HANDLE_WIDTH / 2,

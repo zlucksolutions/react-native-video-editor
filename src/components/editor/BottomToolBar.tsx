@@ -7,7 +7,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useEditorContext } from '../../context/EditorContext';
 import { useEditorState } from '../../context/EditorStateContext';
 import type { EditorTool } from '../../context/EditorContext';
-import { COLORS } from '../../constants/colors';
+import { CAPTION_BG_COLORS, COLORS } from '../../constants/colors';
 // @ts-ignore - Peer dependency
 import { pick, keepLocalCopy, types } from '@react-native-documents/picker';
 // @ts-ignore - Peer dependency
@@ -197,7 +197,10 @@ const styles = ScaledSheet.create({
     minWidth: '70@ms',
   },
   toolCardSelected: {
-    // Styling handled via icon gradient
+    backgroundColor: CAPTION_BG_COLORS[2],
+    borderWidth: 1,
+    borderColor: 'white',
+    borderRadius: '12@ms',
   },
   toolIconContainer: {
     width: '48@ms',

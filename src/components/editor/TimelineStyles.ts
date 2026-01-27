@@ -123,6 +123,7 @@ export const createTimelineStyles = () =>
     trimTrackContainer: {
       marginBottom: '6@ms',
       position: 'relative',
+      overflow: 'visible',
     },
     muteButton: {
       position: 'absolute',
@@ -152,11 +153,12 @@ export const createTimelineStyles = () =>
       backgroundColor: 'rgba(255,255,255,0.1)',
       borderRadius: '6@ms',
       position: 'relative',
+      overflow: 'visible',
     },
     timelineTrack: {
       height: '100%',
       borderRadius: 6,
-      overflow: 'hidden',
+      overflow: 'visible',
     },
     clippingView: {
       ...StyleSheet.absoluteFillObject,
