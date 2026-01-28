@@ -27,6 +27,7 @@ import Animated, {
 import { FONT_SIZE_MIN, FONT_SIZE_MAX } from '../../constants/dimensions';
 import { createTextEditorStyles } from './TextEditorStyles';
 import type { TextSegment } from '../../types/segments';
+import { deviceUtils } from '../../utils/deviceUtils';
 
 // Window dimensions removed as centering now uses PREVIEW area constants
 
@@ -338,7 +339,10 @@ export const TextEditor: React.FC<TextEditorProps> = ({
           const { width, height } = e.nativeEvent.layout;
           textElementSizeRef.current = { width, height };
         }}
-        style={styles.inputContainer}
+        style={[
+          styles.inputContainer,
+          deviceUtils.isAndroid && styles.androidInputContainer,
+        ]}
         onPress={() => (textInputRef.current as any)?.focus()}
       >
         <View style={textBackgroundStyle}>

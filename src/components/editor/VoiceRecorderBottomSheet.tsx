@@ -402,10 +402,16 @@ export const VoiceRecorderBottomSheet: React.FC<
     return null;
   }
 
+  const snapPoints = deviceUtils.isAndroid
+    ? ['34%']
+    : deviceUtils.isSmallIphone()
+    ? ['41%']
+    : ['38%'];
+
   return (
     <CustomBottomSheet
       ref={bottomSheetRef}
-      snapPoints={['41%']}
+      snapPoints={snapPoints}
       title="Record Voiceover"
       isSheetOpen={sheetIndex}
       setIsSheetOpen={setSheetIndex}

@@ -293,7 +293,6 @@ export const createTimelineStyles = () =>
       height: '28@ms',
       justifyContent: 'center',
       alignItems: 'flex-start',
-      marginLeft: '4@ms',
       marginBottom: '6@ms',
     },
     addButton: {

@@ -97,7 +97,6 @@ export const createCropBottomSheetStyles = () =>
     },
     originalIconBoxSelected: {
       borderColor: '#00ff88',
-      backgroundColor: '#00ff88',
     },
     originalIconBoxUnselected: {
       borderColor: '#bebebe',

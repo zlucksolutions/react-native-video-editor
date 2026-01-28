@@ -138,7 +138,11 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
   const [toolBarHeight, setToolBarHeight] = useState(0);
   const [isTimelineVisible, setIsTimelineVisible] = useState(false);
   const safeMargin = deviceUtils.isSmallIphone() ? toolBarHeight / 1.6 : 0;
-  const safeSpaceBottom = deviceUtils.isIOS
+  const safeSpaceBottom = deviceUtils.isSmallIphone()
+    ? toolBarHeight / 3
+    : deviceUtils.isIOS
+    ? toolBarHeight / 2
+    : deviceUtils.isSmallIphone()
     ? toolBarHeight / 3
     : toolBarHeight / 1.5;
 
@@ -339,7 +343,7 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
     };
   });
 
-  const safeMarginBottom = deviceUtils.isIOS ? 5 : -25;
+  const safeMarginBottom = deviceUtils.isAndroid ? -5 : 30;
   const bottomValue = useMemo(() => {
     return deviceUtils.isSmallIphone()
       ? 0
@@ -510,7 +514,11 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
             swipeIndicatorAnimatedStyle,
             {
               bottom:
-                containerHeight - PREVIEW_HEIGHT + safeSpaceBottom + safeMargin,
+                containerHeight -
+                PREVIEW_HEIGHT +
+                safeSpaceBottom +
+                safeMargin +
+                (deviceUtils.isAndroid ? 30 : 0),
             },
           ]}
         >

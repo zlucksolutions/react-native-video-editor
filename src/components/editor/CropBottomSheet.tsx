@@ -14,6 +14,7 @@ import { createCropBottomSheetStyles } from './CropBottomSheetStyles';
 import { CustomBottomSheet } from './CustomBottomSheet';
 // @ts-ignore - Peer dependency
 import type BottomSheet from '@gorhom/bottom-sheet';
+import { deviceUtils } from '../../utils/deviceUtils';
 
 type AspectRatio = {
   label: string;
@@ -112,10 +113,16 @@ export const CropBottomSheet: React.FC = () => {
     }, 400);
   }, [setActiveTool, handleRequestClose]);
 
+  const snapPoints = deviceUtils.isAndroid
+    ? ['25%']
+    : deviceUtils.isSmallIphone()
+    ? ['30%']
+    : ['28%'];
+
   return (
     <CustomBottomSheet
       ref={bottomSheetRef}
-      snapPoints={['30%']}
+      snapPoints={snapPoints}
       title="Choose an aspect ratio"
       isSheetOpen={sheetIndex}
       setIsSheetOpen={setSheetIndex}

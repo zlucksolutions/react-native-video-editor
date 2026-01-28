@@ -33,6 +33,9 @@ import {
 } from '../../constants/dimensions';
 import { DraggableText } from './DraggableText';
 import type { TextSegment } from '../../types/segments';
+import { deviceUtils } from '../../utils/deviceUtils';
+// @ts-ignore - Peer dependency
+import { Pressable as GHPressable } from 'react-native-gesture-handler';
 
 type Props = {
   source: string;
@@ -41,6 +44,7 @@ type Props = {
 };
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const RNPressable = deviceUtils.isIOS ? Pressable : GHPressable;
 
 export const PreviewArea: React.FC<Props> = ({
   source,
@@ -232,7 +236,7 @@ export const PreviewArea: React.FC<Props> = ({
   const videoSourceProp = useMemo(() => ({ uri: source }), [source]);
 
   return (
-    <Pressable onPress={handleVideoPress} style={StyleSheet.absoluteFill}>
+    <RNPressable onPress={handleVideoPress} style={StyleSheet.absoluteFill}>
       <Animated.View
         style={[styles.videoContainer, videoContainerAnimatedStyle]}
       >
@@ -409,7 +413,7 @@ export const PreviewArea: React.FC<Props> = ({
           />
         );
       })}
-    </Pressable>
+    </RNPressable>
   );
 };
 

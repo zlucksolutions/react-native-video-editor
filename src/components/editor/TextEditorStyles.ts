@@ -27,6 +27,11 @@ export const createTextEditorStyles = () =>
       fontWeight: '600',
       padding: '10@ms',
     },
+    androidInputContainer: {
+      left: 0,
+      bottom: '25@ms',
+      right: 0,
+    },
     inputContainer: {
       justifyContent: 'center',
       alignItems: 'center',
@@ -46,7 +51,7 @@ export const createTextEditorStyles = () =>
       position: 'absolute',
       right: '10@ms',
       top: '24%',
-      transform: [{ translateY: -75 }],
+      transform: [{ translateY: deviceUtils.isAndroid ? 0 : -75 }],
     },
     slider: {
       alignItems: 'center',
@@ -132,7 +137,7 @@ export const createTextEditorStyles = () =>
       justifyContent: 'center',
       alignItems: 'center',
       marginTop: '8@ms',
-      marginBottom: deviceUtils.isSmallIphone() ? '10@ms' : 0,
+      marginBottom: deviceUtils.isIOS ? '10@ms' : 0,
     },
     tabText: {
       color: 'rgba(255, 255, 255, 0.6)',
