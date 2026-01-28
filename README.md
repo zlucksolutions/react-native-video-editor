@@ -57,7 +57,8 @@ react-native-fast-image \
 react-native-fs \
 react-native-linear-gradient \
 react-native-size-matters \
-react-native-create-thumbnail
+react-native-create-thumbnail \
+@gorhom/bottom-sheet
 ```
 
 ---
