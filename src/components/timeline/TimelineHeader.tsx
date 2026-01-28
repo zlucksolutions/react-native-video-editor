@@ -73,7 +73,11 @@ export const TimelineHeader: React.FC<TimelineHeaderProps> = ({
         </View>
       ) : (
         <Pressable onPress={onCloseTimeline} style={styles.collapseButton}>
-          <Text style={styles.collapseIcon}>✕</Text>
+          <Image
+            style={styles.trimCancleIcon}
+            tintColor="#fff"
+            source={CloseIcon}
+          />
         </Pressable>
       )}
     </View>
@@ -131,8 +135,8 @@ const styles = ScaledSheet.create({
     resizeMode: 'contain',
   },
   trimCancleIcon: {
-    width: '12@ms',
-    height: '12@ms',
+    width: '10@ms',
+    height: '10@ms',
     resizeMode: 'contain',
   },
   collapseButton: {

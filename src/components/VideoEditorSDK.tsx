@@ -145,7 +145,6 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
   // Animation values
   const layoutAnimation = useSharedValue(0);
   const audioTrimmerAnimation = useSharedValue(0);
-  const voiceRecorderAnimation = useSharedValue(0);
 
   const { top: safeTop, bottom: safeBottom } = useSafeAreaInsets();
 
@@ -209,12 +208,9 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
 
   // Animation effects
   useEffect(() => {
-    layoutAnimation.value = interpolate(
-      isTimelineVisible,
-      [0, 1],
-      [0, 1],
-      Extrapolation.CLAMP
-    );
+    layoutAnimation.value = withTiming(isTimelineVisible ? 1 : 0, {
+      duration: 300,
+    });
   }, [isTimelineVisible, layoutAnimation]);
 
   useEffect(() => {
@@ -239,14 +235,6 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
     setIsPlaying,
     videoRef,
   ]);
-
-  useEffect(() => {
-    // Show voice recorder when voiceover tool is active
-    const shouldShow = activeTool === 'voiceover';
-    voiceRecorderAnimation.value = withTiming(shouldShow ? 1 : 0, {
-      duration: 300,
-    });
-  }, [activeTool, voiceRecorderAnimation]);
 
   useEffect(() => {
     // Show timeline when trim tool is active
@@ -433,37 +421,13 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
     );
     return {
       position: 'absolute',
+      top: 0,
       bottom: 0,
       left: 0,
       right: 0,
       transform: [{ translateY }],
       opacity,
       pointerEvents: audioTrimmerAnimation.value < 0.5 ? 'none' : 'auto',
-      zIndex: 30,
-    };
-  });
-
-  const voiceRecorderSheetAnimatedStyle = useAnimatedStyle(() => {
-    const translateY = interpolate(
-      voiceRecorderAnimation.value,
-      [0, 1],
-      [400, 0],
-      Extrapolation.CLAMP
-    );
-    const opacity = interpolate(
-      voiceRecorderAnimation.value,
-      [0, 0.3, 1],
-      [0, 0, 1],
-      Extrapolation.CLAMP
-    );
-    return {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      transform: [{ translateY }],
-      opacity,
-      pointerEvents: voiceRecorderAnimation.value < 0.5 ? 'none' : 'auto',
       zIndex: 30,
     };
   });
@@ -556,6 +520,7 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
           <Timeline
             videoSource={sourceUri || source}
             onSegmentPress={resetPreviewToNormal}
+            onCloseTimeline={() => setIsTimelineVisible(false)}
           />
         </Animated.View>
 
@@ -617,40 +582,38 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
           />
         </Animated.View>
 
-        <Animated.View style={voiceRecorderSheetAnimatedStyle}>
-          {VoiceRecorderBottomSheet && (
-            <VoiceRecorderBottomSheet
-              isVisible={activeTool === 'voiceover'}
-              videoCurrentTime={getPlaybackState().currentTime}
-              videoDuration={getPlaybackState().duration}
-              voiceoverSegments={voiceoverSegments}
-              onClose={() => {
-                setActiveTool(null);
-                if (isPlaying) setIsPlaying(false);
-              }}
-              onDone={(voiceoverData: any) => {
-                const { duration } = getPlaybackState();
-                const endTime = Math.min(
-                  voiceoverData.start + voiceoverData.duration,
-                  duration
-                );
-                const newVoiceoverSegment: VoiceoverSegment = {
-                  id: `voiceover-${Date.now()}-${Math.random()
-                    .toString(36)
-                    .substr(2, 9)}`,
-                  type: 'voiceover',
-                  start: voiceoverData.start,
-                  end: endTime,
-                  uri: voiceoverData.uri,
-                  name: 'My Voiceover',
-                  color: '#9C27B0',
-                };
-                addVoiceoverSegment(newVoiceoverSegment);
-                setActiveTool(null);
-              }}
-            />
-          )}
-        </Animated.View>
+        {VoiceRecorderBottomSheet && (
+          <VoiceRecorderBottomSheet
+            isVisible={activeTool === 'voiceover'}
+            videoCurrentTime={getPlaybackState().currentTime}
+            videoDuration={getPlaybackState().duration}
+            voiceoverSegments={voiceoverSegments}
+            onClose={() => {
+              setActiveTool(null);
+              if (isPlaying) setIsPlaying(false);
+            }}
+            onDone={(voiceoverData: any) => {
+              const { duration } = getPlaybackState();
+              const endTime = Math.min(
+                voiceoverData.start + voiceoverData.duration,
+                duration
+              );
+              const newVoiceoverSegment: VoiceoverSegment = {
+                id: `voiceover-${Date.now()}-${Math.random()
+                  .toString(36)
+                  .substr(2, 9)}`,
+                type: 'voiceover',
+                start: voiceoverData.start,
+                end: endTime,
+                uri: voiceoverData.uri,
+                name: 'My Voiceover',
+                color: '#9C27B0',
+              };
+              addVoiceoverSegment(newVoiceoverSegment);
+              setActiveTool(null);
+            }}
+          />
+        )}
 
         {/* Text Editor */}
         {isTextEditorVisible && (

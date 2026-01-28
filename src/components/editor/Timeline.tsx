@@ -56,11 +56,13 @@ const PressableWrapper = Platform.OS === 'ios' ? Pressable : GHPressable;
 type TimelineProps = {
   videoSource?: string;
   onSegmentPress?: () => void;
+  onCloseTimeline?: () => void;
 };
 
 export const Timeline: React.FC<TimelineProps> = ({
   videoSource,
   onSegmentPress,
+  onCloseTimeline,
 }) => {
   const {
     getPlaybackState,
@@ -416,7 +418,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   };
 
   const handleCloseTimeline = () => {
-    // This will be handled by parent component (VideoEditorSDK)
+    onCloseTimeline?.();
   };
 
   const handleTrimTrackPress = () => {
