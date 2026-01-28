@@ -191,6 +191,8 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
       }
 
       const config = buildExportConfig();
+      console.log('config', config);
+      // return;
       const exportedUri = await VideoEditorNative.applyEdits(config);
       onCloseEditor({ success: true, exportedUri });
     } catch (e: any) {

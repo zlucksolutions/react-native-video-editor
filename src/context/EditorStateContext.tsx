@@ -191,6 +191,11 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
     start: 0,
     end: 0,
   });
+  const normalizeFileUri = useCallback((uri?: string | null) => {
+    if (!uri) return null;
+    if (/^(file|content|http|https):\/\//.test(uri)) return uri;
+    return `file://${uri}`;
+  }, []);
 
   // Add or replace operation - Moved up for stability
   const upsertOperation = useCallback((element: VideoElement) => {
@@ -287,18 +292,21 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
       audioTrimRef.current = { start, end };
       upsertOperation({
         type: 'audio',
-        musicUri: audioUri || undefined,
+        musicUri: normalizeFileUri(audioUri) || undefined,
         audioOffset: start,
       });
     },
-    [upsertOperation, audioUri]
+    [upsertOperation, audioUri, normalizeFileUri]
   );
 
   const getAudioTrim = useCallback(() => audioTrimRef.current, []);
 
-  const setAudioUri = useCallback((uri: string | null) => {
-    setAudioUriState(uri);
-  }, []);
+  const setAudioUri = useCallback(
+    (uri: string | null) => {
+      setAudioUriState(normalizeFileUri(uri));
+    },
+    [normalizeFileUri]
+  );
 
   const setAudioSegments = useCallback((segments: AudioSegment[]) => {
     setAudioSegmentsState(segments);
@@ -309,12 +317,12 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
       setAudioSegmentsState([segment]);
       upsertOperation({
         type: 'audio',
-        musicUri: segment.uri,
+        musicUri: normalizeFileUri(segment.uri) || undefined,
         audioOffset: segment.audioOffset,
         isLooped: segment.isLooped,
       });
     },
-    [upsertOperation]
+    [upsertOperation, normalizeFileUri]
   );
 
   const removeAudioSegment = useCallback(
@@ -330,7 +338,7 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
           if (remainingSegment && remainingSegment.uri) {
             upsertOperation({
               type: 'audio',
-              musicUri: remainingSegment.uri,
+              musicUri: normalizeFileUri(remainingSegment.uri) || undefined,
               audioOffset: remainingSegment.audioOffset,
               isLooped: remainingSegment.isLooped,
             });
@@ -347,7 +355,7 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
         return prev;
       });
     },
-    [removeOperation, upsertOperation]
+    [removeOperation, upsertOperation, normalizeFileUri]
   );
 
   const setTextSegments = useCallback(
