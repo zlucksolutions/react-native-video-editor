@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,10 @@ import Animated, {
 import { deviceUtils } from '../../utils/deviceUtils';
 // @ts-ignore - Peer dependency
 import { Pressable as PressableGH } from 'react-native-gesture-handler';
+// @ts-ignore - Peer dependency
+import type BottomSheet from '@gorhom/bottom-sheet';
 import { StyleFunction } from './VoiceRecorderBottomSheetStyles';
+import { CustomBottomSheet } from './CustomBottomSheet';
 
 // Safe imports with try-catch
 let Sound: any = null;
@@ -88,6 +91,8 @@ export const VoiceRecorderBottomSheet: React.FC<
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isStartingRecord, setIsStartingRecord] = useState(false);
   const [isStoppingRecord, setIsStoppingRecord] = useState(false);
+  const [sheetIndex, setSheetIndex] = useState(isVisible ? 0 : -1);
+  const bottomSheetRef = useRef<BottomSheet>(null);
 
   // Calculate max recording duration based on next voiceover or video end
   const nextVoiceover = voiceoverSegments
@@ -102,7 +107,6 @@ export const VoiceRecorderBottomSheet: React.FC<
 
   useEffect(() => {
     return () => {
-      // Critical cleanup to prevent memory leaks
       try {
         Sound.stopRecorder();
         Sound.removeRecordBackListener();
@@ -139,6 +143,10 @@ export const VoiceRecorderBottomSheet: React.FC<
       pulse.value = 1;
     }
   }, [isRecording, pulse]);
+
+  useEffect(() => {
+    setSheetIndex(isVisible ? 0 : -1);
+  }, [isVisible]);
 
   const animatedOuter = useAnimatedStyle(() => ({
     transform: [{ scale: pulse.value }],
@@ -235,7 +243,6 @@ export const VoiceRecorderBottomSheet: React.FC<
         console.warn('RNFS dir check/mkdir failed', e);
       }
 
-      // Add audio configuration for better recording quality
       const audioSet = {
         // Common settings
         AudioSamplingRate: 44100,
@@ -310,7 +317,7 @@ export const VoiceRecorderBottomSheet: React.FC<
 
       onDone(voiceoverData);
       resetRecordingState();
-      onClose();
+      bottomSheetRef.current?.close();
     } else {
       Alert.alert('No Recording', 'Please record audio before proceeding.');
     }
@@ -322,7 +329,6 @@ export const VoiceRecorderBottomSheet: React.FC<
     maxRecordingDurationMs,
     onDone,
     resetRecordingState,
-    onClose,
   ]);
 
   const handleToggleRecording = useCallback(async (): Promise<void> => {
@@ -332,7 +338,6 @@ export const VoiceRecorderBottomSheet: React.FC<
 
     if (isRecording) {
       await onStopRecord();
-      // Automatically trigger Done after stopping
       setTimeout(() => {
         if (recordedAudioUri || recordTime > 0) {
           handleDone();
@@ -367,8 +372,15 @@ export const VoiceRecorderBottomSheet: React.FC<
       Sound.removeRecordBackListener();
     }
     resetRecordingState();
-    onClose();
+    bottomSheetRef.current?.close();
+    setTimeout(() => {
+      onClose();
+    }, 500);
   }, [isRecording, resetRecordingState, onClose]);
+
+  const handleRequestClose = useCallback(() => {
+    bottomSheetRef.current?.close();
+  }, []);
 
   useEffect(() => {
     if (isVisible) {
@@ -377,16 +389,6 @@ export const VoiceRecorderBottomSheet: React.FC<
   }, [isVisible, resetRecordingState]);
 
   const canRecord = maxRecordingDurationMs > 0;
-
-  const getStatusMessage = () => {
-    if (isRecording || isStoppingRecord || isStartingRecord)
-      return 'Recording...';
-    if (recordedAudioUri) return 'Recording complete';
-    if (!canRecord) return 'Move to an earlier position to record';
-    return null;
-  };
-
-  const statusMessage = getStatusMessage();
 
   // Check if dependencies are available - must be after all hooks
   if (!Sound || !RNFS) {
@@ -400,17 +402,15 @@ export const VoiceRecorderBottomSheet: React.FC<
     return null;
   }
 
-  if (!isVisible) return null;
-
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Record Voiceover</Text>
-        <PressableWrapper onPress={handleCancel} style={styles.closeButton}>
-          <Text style={styles.closeText}>✕</Text>
-        </PressableWrapper>
-      </View>
-
+    <CustomBottomSheet
+      ref={bottomSheetRef}
+      snapPoints={['41%']}
+      title="Record Voiceover"
+      isSheetOpen={sheetIndex}
+      setIsSheetOpen={setSheetIndex}
+      onClose={handleCancel}
+    >
       <View style={styles.content}>
         {/* Recording Info */}
         <View style={styles.recordingInfo}>
@@ -454,18 +454,14 @@ export const VoiceRecorderBottomSheet: React.FC<
             {formatTime(recordTime)} / {formatTime(maxRecordingDurationMs)}
           </Text>
         </View>
-
-        {/* Status Message */}
-        {statusMessage && (
-          <View style={styles.statusContainer}>
-            <Text style={styles.statusText}>{statusMessage}</Text>
-          </View>
-        )}
       </View>
 
       {/* Footer */}
       <View style={styles.footer}>
-        <PressableWrapper style={styles.footerButton} onPress={handleCancel}>
+        <PressableWrapper
+          style={styles.footerButton}
+          onPress={handleRequestClose}
+        >
           <Text style={styles.footerButtonText}>Cancel</Text>
         </PressableWrapper>
         <Text style={styles.footerTitle}>Voiceover</Text>
@@ -484,6 +480,6 @@ export const VoiceRecorderBottomSheet: React.FC<
           </Text>
         </PressableWrapper>
       </View>
-    </View>
+    </CustomBottomSheet>
   );
 };

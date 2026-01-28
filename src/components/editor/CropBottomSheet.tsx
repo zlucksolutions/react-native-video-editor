@@ -1,18 +1,19 @@
-import React, { useMemo } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Platform,
-  Pressable as RNPressable,
-} from 'react-native';
+import React, {
+  useMemo,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+} from 'react';
+import { View, Text, TouchableOpacity, Platform } from 'react-native';
 // @ts-ignore - Peer dependency
 import { Pressable as GHPressable } from 'react-native-gesture-handler';
-// @ts-ignore - Peer dependency
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { useEditorContext } from '../../context/EditorContext';
 import { useEditorState } from '../../context/EditorStateContext';
 import { createCropBottomSheetStyles } from './CropBottomSheetStyles';
+import { CustomBottomSheet } from './CustomBottomSheet';
+// @ts-ignore - Peer dependency
+import type BottomSheet from '@gorhom/bottom-sheet';
 
 type AspectRatio = {
   label: string;
@@ -89,66 +90,65 @@ export const CropBottomSheet: React.FC = () => {
   const { activeTool, setActiveTool } = useEditorContext();
   const { cropRatio, setCropRatio } = useEditorState();
   const styles = createCropBottomSheetStyles();
+  const [sheetIndex, setSheetIndex] = useState(-1);
+  const bottomSheetRef = useRef<BottomSheet>(null);
 
-  if (activeTool !== 'crop') return null;
+  useEffect(() => {
+    setSheetIndex(activeTool === 'crop' ? 0 : -1);
+  }, [activeTool]);
 
   const handleRatioSelect = (ratio: AspectRatio) => {
     setCropRatio(ratio.value);
   };
 
-  const handleClose = () => {
-    setActiveTool(null);
-  };
+  const handleRequestClose = useCallback(() => {
+    bottomSheetRef.current?.close();
+  }, []);
+
+  const handleClose = useCallback(() => {
+    handleRequestClose();
+    setTimeout(() => {
+      setActiveTool(null);
+    }, 400);
+  }, [setActiveTool, handleRequestClose]);
 
   return (
-    <>
-      {/* Backdrop */}
-      <Animated.View entering={FadeIn.duration(200)} style={styles.backdrop}>
-        <RNPressable onPress={handleClose} style={styles.backdropTouchable} />
-      </Animated.View>
-
-      {/* Bottom Sheet */}
-      <Animated.View
-        entering={SlideInDown.duration(300).damping(20)}
-        style={styles.sheetContainer}
-      >
-        <View style={styles.sheet}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Choose an aspect ratio</Text>
-            <RNPressable onPress={handleClose} style={styles.closeButton}>
-              <Text style={styles.closeText}>✕</Text>
-            </RNPressable>
-          </View>
-
-          <View style={styles.optionsContainer}>
-            {aspectRatios.map((ratio) => {
-              const isSelected = cropRatio === ratio.value;
-              return (
-                <RNPressable2
-                  key={ratio.value}
-                  style={styles.optionButton}
-                  onPress={() => handleRatioSelect(ratio)}
-                  activeOpacity={0.7}
-                >
-                  <AspectRatioIcon
-                    label={ratio.label}
-                    isSelected={isSelected}
-                    styles={styles}
-                  />
-                  <Text
-                    style={[
-                      styles.optionText,
-                      isSelected && styles.selectedOptionText,
-                    ]}
-                  >
-                    {ratio.label}
-                  </Text>
-                </RNPressable2>
-              );
-            })}
-          </View>
-        </View>
-      </Animated.View>
-    </>
+    <CustomBottomSheet
+      ref={bottomSheetRef}
+      snapPoints={['30%']}
+      title="Choose an aspect ratio"
+      isSheetOpen={sheetIndex}
+      setIsSheetOpen={setSheetIndex}
+      onClose={handleClose}
+      sheetContentStyle={styles.sheetContent}
+    >
+      <View style={styles.optionsContainer}>
+        {aspectRatios.map((ratio) => {
+          const isSelected = cropRatio === ratio.value;
+          return (
+            <RNPressable2
+              key={ratio.value}
+              style={styles.optionButton}
+              onPress={() => handleRatioSelect(ratio)}
+              activeOpacity={0.7}
+            >
+              <AspectRatioIcon
+                label={ratio.label}
+                isSelected={isSelected}
+                styles={styles}
+              />
+              <Text
+                style={[
+                  styles.optionText,
+                  isSelected && styles.selectedOptionText,
+                ]}
+              >
+                {ratio.label}
+              </Text>
+            </RNPressable2>
+          );
+        })}
+      </View>
+    </CustomBottomSheet>
   );
 };

@@ -1,62 +1,11 @@
 // @ts-ignore - Peer dependency
 import { ScaledSheet } from 'react-native-size-matters';
-import { StyleSheet } from 'react-native';
 
 export const createCropBottomSheetStyles = () =>
   ScaledSheet.create({
-    backdrop: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-      zIndex: 100,
-    },
-    backdropTouchable: {
-      flex: 1,
-    },
-    sheetContainer: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      zIndex: 101,
-      backgroundColor: '#0a0a0a',
-      borderTopLeftRadius: 16,
-      borderTopRightRadius: 16,
-    },
-    sheet: {
-      minHeight: '120@ms',
-      backgroundColor: '#0a0a0a',
+    sheetContent: {
       paddingVertical: '20@ms',
       paddingHorizontal: '16@ms',
-      borderTopWidth: 1,
-      borderTopColor: '#1c1c1e',
-    },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '12@ms',
-    },
-    title: {
-      color: '#fff',
-      fontSize: '14@ms',
-      fontWeight: '600',
-      flex: 1,
-      textAlign: 'center',
-    },
-    closeButton: {
-      width: '28@ms',
-      height: '28@ms',
-      borderRadius: 14,
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'absolute',
-      right: 0,
-    },
-    closeText: {
-      color: '#fff',
-      fontSize: '16@ms',
-      fontWeight: '600',
     },
     optionsContainer: {
       flexDirection: 'row',
