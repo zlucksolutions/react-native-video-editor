@@ -1,10 +1,13 @@
 import React from 'react';
-import { View, Text, Pressable, StatusBar } from 'react-native';
+import { View, Text, Pressable, StatusBar, Image } from 'react-native';
 // @ts-ignore - Peer dependency
 import { ScaledSheet } from 'react-native-size-matters';
 import { deviceUtils } from '../../utils/deviceUtils';
 // @ts-ignore - Peer dependency
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// @ts-ignore - Peer dependency
+import { CloseIcon } from '../../assets/icons/index.js';
+import { COLORS } from '../../constants/colors';
 
 type Props = {
   onCancel: () => void;
@@ -26,13 +29,17 @@ export const TopBar: React.FC<Props> = ({ onCancel, onExport }) => {
     >
       <Pressable onPress={onCancel} style={styles.headerButton}>
         <View style={styles.closeIconPlaceholder}>
-          <Text style={styles.closeIconText}>✕</Text>
+          <Image
+            style={styles.closeIconText}
+            tintColor={COLORS.TEXT_PRIMARY}
+            source={CloseIcon}
+          />
         </View>
       </Pressable>
 
-      <View style={styles.titleContainer}>
+      {/* <View style={styles.titleContainer}>
         <Text style={styles.headerTitle}>Edit Video</Text>
-      </View>
+      </View> */}
 
       <Pressable
         onPress={onExport}
@@ -68,9 +75,10 @@ const styles = ScaledSheet.create({
     alignItems: 'center',
   },
   closeIconText: {
-    color: '#fff',
-    fontSize: '16@ms',
-    fontWeight: '300',
+    tintColor: '#fff',
+    height: '16@ms',
+    width: '16@ms',
+    resizeMode: 'contain',
   },
   titleContainer: {
     flex: 1,
