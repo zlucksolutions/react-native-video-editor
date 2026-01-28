@@ -131,7 +131,8 @@ export const createTextEditorStyles = () =>
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      marginTop: 8,
+      marginTop: '8@ms',
+      marginBottom: deviceUtils.isSmallIphone() ? '10@ms' : 0,
     },
     tabText: {
       color: 'rgba(255, 255, 255, 0.6)',

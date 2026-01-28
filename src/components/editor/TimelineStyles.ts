@@ -267,6 +267,7 @@ export const createTimelineStyles = () =>
       position: 'relative',
     },
     segmentLabel: {
+      left: '12@ms',
       fontSize: '11@ms',
       fontWeight: '600',
       color: '#fff',
@@ -274,6 +275,7 @@ export const createTimelineStyles = () =>
     deleteButton: {
       position: 'absolute',
       alignSelf: 'flex-start',
+      left: '2@ms',
       width: '16@ms',
       height: '16@ms',
       borderRadius: '8@ms',

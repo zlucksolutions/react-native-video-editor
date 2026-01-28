@@ -286,6 +286,7 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
 
       setIsTextEditorVisible(false);
       setEditingTextElement(null);
+      setActiveTool(null);
     },
     [
       getPlaybackState,
@@ -294,13 +295,15 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
       addTextSegment,
       setIsTextEditorVisible,
       setEditingTextElement,
+      setActiveTool,
     ]
   );
 
   const handleTextEditorCancel = useCallback(() => {
     setIsTextEditorVisible(false);
     setEditingTextElement(null);
-  }, [setIsTextEditorVisible, setEditingTextElement]);
+    setActiveTool(null);
+  }, [setIsTextEditorVisible, setEditingTextElement, setActiveTool]);
 
   // Animated styles
   const timelineSectionAnimatedStyle = useAnimatedStyle(() => {
