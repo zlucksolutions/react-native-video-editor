@@ -1,4 +1,10 @@
 # react-native-video-editor-sdk
+<p align="center">
+  <img 
+    src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=30&pause=1000&color=36BCF7&center=true&vCenter=true&width=700&lines=React+Native+Video+Editor+SDK;Cross-Platform+iOS+%26+Android;Fast+%7C+Native+%7C+Powerful" 
+    alt="Typing SVG" 
+  />
+</p>
 
 A **UI-based, native video editing SDK** for React Native.
 
