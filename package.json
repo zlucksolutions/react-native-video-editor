@@ -47,14 +47,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zlucksolutions/react-native-video-editor.git"
+    "url": "git+https://github.com/zlucksolutions/react-native-video-editor-sdk.git"
   },
   "author": "Zluck Solutions <dev@zlucksolutions.com> (https://github.com/zlucksolutions)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/zlucksolutions/react-native-video-editor/issues"
+    "url": "https://github.com/zlucksolutions/react-native-video-editor-sdk/issues"
   },
-  "homepage": "https://github.com/zlucksolutions/react-native-video-editor#readme",
+  "homepage": "https://github.com/zlucksolutions/react-native-video-editor-sdk#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
