@@ -1,6 +1,6 @@
 {
   "name": "react-native-video-editor-zluck",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Video Editor tool for react-native(Trim, crop etc., add music, add textoverlay etc.)",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
