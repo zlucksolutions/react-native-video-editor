@@ -1,5 +1,5 @@
 {
-  "name": "react-native-video-editor-zluck",
+  "name": "@zlucksolutions/react-native-video-editor",
   "version": "1.0.3",
   "description": "Video Editor tool for react-native(Trim, crop etc., add music, add textoverlay etc.)",
   "main": "./lib/module/index.js",
@@ -32,7 +32,7 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "yarn workspace react-native-video-editor-zluck-example",
+    "example": "yarn workspace react-native-video-editor-example",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
     "prepare": "bob build",
     "typecheck": "tsc",
@@ -47,14 +47,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zlucksolutions/react-native-video-editor-zluck.git"
+    "url": "git+https://github.com/zlucksolutions/react-native-video-editor.git"
   },
   "author": "Zluck Solutions <dev@zlucksolutions.com> (https://github.com/zlucksolutions)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/zlucksolutions/react-native-video-editor-zluck/issues"
+    "url": "https://github.com/zlucksolutions/react-native-video-editor/issues"
   },
-  "homepage": "https://github.com/zlucksolutions/react-native-video-editor-zluck#readme",
+  "homepage": "https://github.com/zlucksolutions/react-native-video-editor#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },

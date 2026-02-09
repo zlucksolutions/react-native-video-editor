@@ -3,7 +3,7 @@ import { useState } from 'react';
 import {
   openVideoEditor,
   VideoEditorHost,
-} from 'react-native-video-editor-zluck';
+} from 'react-native-video-editor';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Video from 'react-native-video';
 import { pick, types } from '@react-native-documents/picker';

@@ -10434,9 +10434,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-native-video-editor-zluck-example@workspace:example":
+"react-native-video-editor-example@workspace:example":
   version: 0.0.0-use.local
-  resolution: "react-native-video-editor-zluck-example@workspace:example"
+  resolution: "react-native-video-editor-example@workspace:example"
   dependencies:
     "@babel/core": "npm:^7.25.2"
     "@babel/preset-env": "npm:^7.25.3"
@@ -10470,9 +10470,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"react-native-video-editor-zluck@workspace:.":
+"react-native-video-editor@workspace:.":
   version: 0.0.0-use.local
-  resolution: "react-native-video-editor-zluck@workspace:."
+  resolution: "react-native-video-editor@workspace:."
   dependencies:
     "@commitlint/config-conventional": "npm:^19.8.1"
     "@eslint/compat": "npm:^1.3.2"
