@@ -1,6 +1,6 @@
 # Video Editor SDK – Example App
 
-This is the **example application** for the `react-native-video-editor-sdk`.
+This is the **example application** for the `react-native-video-editor-zluck`.
 
 It demonstrates how to:
 

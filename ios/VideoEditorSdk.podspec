@@ -5,7 +5,7 @@ Pod::Spec.new do |s|
   s.description  = "A cross-platform video editor SDK for React Native with native Media3 and AVFoundation processing."
 
   s.platforms    = { :ios => "13.0" }
-  s.source       = { :git => "https://github.com/zlucksolutions/react-native-video-editor-sdk.git", :tag => s.version }
+  s.source       = { :git => "https://github.com/zlucksolutions/react-native-video-editor-zluck.git", :tag => s.version }
 
   s.source_files = "ios/**/*.{h,m,mm,swift}"
 

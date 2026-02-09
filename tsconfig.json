@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "react-native-video-editor-sdk": ["./src/index"]
+      "react-native-video-editor-zluck": ["./src/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,

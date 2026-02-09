@@ -1,4 +1,4 @@
-# react-native-video-editor-sdk
+# react-native-video-editor-zluck
 <p align="center">
   <img 
     src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=30&pause=1000&color=36BCF7&center=true&vCenter=true&width=700&lines=React+Native+Video+Editor+SDK;Cross-Platform+iOS+%26+Android;Fast+%7C+Native+%7C+Powerful" 
@@ -35,13 +35,13 @@ This library provides a ready-to-use video editor UI (similar to social media ed
 ### 1. Install the library
 
 ```sh
-npm install react-native-video-editor-sdk
+npm install react-native-video-editor-zluck
 ```
 
 or
 
 ```sh
-yarn add react-native-video-editor-sdk
+yarn add react-native-video-editor-zluck
 ```
 
 ---
@@ -135,7 +135,7 @@ npx react-native start --reset-cache
 import {
   openVideoEditor,
   VideoEditorHost,
-} from 'react-native-video-editor-sdk';
+} from 'react-native-video-editor-zluck';
 ```
 
 ---
@@ -172,7 +172,7 @@ import { View, Button, Alert } from 'react-native';
 import {
   openVideoEditor,
   VideoEditorHost,
-} from 'react-native-video-editor-sdk';
+} from 'react-native-video-editor-zluck';
 
 export default function Example() {
   const openEditor = async () => {
