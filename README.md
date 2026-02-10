@@ -1,8 +1,9 @@
 # react-native-video-editor
+
 <p align="center">
-  <img 
-    src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=30&pause=1000&color=36BCF7&center=true&vCenter=true&width=700&lines=React+Native+Video+Editor+SDK;Cross-Platform+iOS+%26+Android;Fast+%7C+Native+%7C+Powerful" 
-    alt="Typing SVG" 
+  <img
+    src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=30&pause=1000&color=36BCF7&center=true&vCenter=true&width=700&lines=React+Native+Video+Editor+SDK;Cross-Platform+iOS+%26+Android;Fast+%7C+Native+%7C+Powerful"
+    alt="Typing SVG"
   />
 </p>
 
@@ -18,15 +19,15 @@ This library provides a ready-to-use video editor UI (similar to social media ed
 
 ## Features
 
-* Built-in video editor UI
-* Trim video
-* Crop / change aspect ratio
-* Add background music (BGM)
-* Add text overlays
-* Add voice-over
-* Automatic audio ducking
-* Native export to device storage
-* Event-driven editor lifecycle
+- Built-in video editor UI
+- Trim video
+- Crop / change aspect ratio
+- Add background music (BGM)
+- Add text overlays
+- Add voice-over
+- Automatic audio ducking
+- Native export to device storage
+- Event-driven editor lifecycle
 
 ---
 
@@ -46,26 +47,52 @@ yarn add @zlucksolutions/react-native-video-editor
 
 ---
 
-### 2. Install required peer dependencies
+### 2. Install peer dependencies (Automated) ⚡
 
-This SDK relies on several React Native libraries that **must be installed by the host app**:
+Run this **single command** to install all required peer dependencies:
+
+```sh
+npx react-native-video-editor install
+```
+
+This will automatically:
+
+- ✅ Detect your package manager (npm/yarn/pnpm)
+- ✅ Install all 15 required peer dependencies
+- ✅ Run `pod install` for iOS
+- ✅ Display setup instructions
+
+<details>
+<summary>📦 <strong>Manual Installation (Alternative)</strong></summary>
+
+If you prefer to install dependencies manually:
 
 ```sh
 npm install \
-react-native-gesture-handler \
-react-native-reanimated \
-react-native-worklets \
-react-native-video \
-@react-native-documents/picker \
-react-native-safe-area-context \
-react-native-permissions \
-react-native-fast-image \
-react-native-fs \
-react-native-linear-gradient \
-react-native-size-matters \
-react-native-create-thumbnail \
-@gorhom/bottom-sheet
+  @gorhom/bottom-sheet \
+  @react-native-documents/picker \
+  react-native-create-thumbnail \
+  react-native-fast-image \
+  react-native-fs \
+  react-native-gesture-handler \
+  react-native-linear-gradient \
+  react-native-nitro-modules \
+  react-native-nitro-sound \
+  react-native-permissions \
+  react-native-reanimated \
+  react-native-safe-area-context \
+  react-native-size-matters \
+  react-native-video \
+  react-native-worklets
 ```
+
+Then run:
+
+```sh
+cd ios && pod install
+```
+
+</details>
 
 ---
 
@@ -217,8 +244,8 @@ export default function Example() {
 
 ## Platform Support
 
-* iOS: ✅ Fully supported
-* Android: ✅ Fully supported
+- iOS: ✅ Fully supported
+- Android: ✅ Fully supported
 
 ---
 
@@ -237,8 +264,8 @@ yarn ios
 
 ## Contributing
 
-* Development workflow: `CONTRIBUTING.md`
-* Code of conduct: `CODE_OF_CONDUCT.md`
+- Development workflow: `CONTRIBUTING.md`
+- Code of conduct: `CODE_OF_CONDUCT.md`
 
 ---
 

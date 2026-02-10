@@ -12,12 +12,16 @@
     },
     "./package.json": "./package.json"
   },
+  "bin": {
+    "react-native-video-editor": "./scripts/install-cli.js"
+  },
   "files": [
     "src",
     "lib",
     "android",
     "ios",
     "cpp",
+    "scripts",
     "*.podspec",
     "react-native.config.js",
     "!ios/build",
@@ -38,7 +42,8 @@
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "test": "jest",
-    "release": "release-it --only-version"
+    "release": "release-it --only-version",
+    "install-peers": "node scripts/install-cli.js"
   },
   "keywords": [
     "react-native",

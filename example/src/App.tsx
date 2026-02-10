@@ -1,9 +1,6 @@
 import { View, Text, Pressable, StyleSheet, Alert, Modal } from 'react-native';
 import { useState } from 'react';
-import {
-  openVideoEditor,
-  VideoEditorHost,
-} from 'react-native-video-editor';
+import { openVideoEditor, VideoEditorHost } from 'react-native-video-editor';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Video from 'react-native-video';
 import { pick, types } from '@react-native-documents/picker';
