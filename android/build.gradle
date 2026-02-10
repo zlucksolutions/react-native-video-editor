@@ -78,24 +78,29 @@ dependencies {
   // Kotlin
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
+
+    def media3Version = getExtOrDefault("media3Version") ?: "1.8.0"
+    def appCompatVersion = getExtOrDefault("appCompatVersion") ?: "1.7.1"
+    def coroutinesVersion = getExtOrDefault("coroutinesVersion") ?: "1.7.3"
+
   // ===============================
   // Media3 (REQUIRED for your SDK)
   // ===============================
-  implementation "androidx.media3:media3-common:1.8.0"
-  implementation "androidx.media3:media3-common-ktx:1.8.0"
-  implementation "androidx.media3:media3-exoplayer:1.8.0"
-  implementation "androidx.media3:media3-ui:1.8.0"
-  implementation "androidx.media3:media3-transformer:1.8.0"
-  implementation "androidx.media3:media3-effect:1.8.0"
+  implementation "androidx.media3:media3-common:$media3Version"
+  implementation "androidx.media3:media3-common-ktx:$media3Version"
+  implementation "androidx.media3:media3-exoplayer:$media3Version"
+  implementation "androidx.media3:media3-ui:$media3Version"
+  implementation "androidx.media3:media3-transformer:$media3Version"
+  implementation "androidx.media3:media3-effect:$media3Version"
 
   // ===============================
   // AndroidX helpers (USED in code)
   // ===============================
-  implementation "androidx.appcompat:appcompat:1.7.1"
+  implementation "androidx.appcompat:appcompat:$appCompatVersion"
 
   // ===============================
   // Coroutines (YOU USE THESE)
   // ===============================
-  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3"
-  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
+  implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
 }
