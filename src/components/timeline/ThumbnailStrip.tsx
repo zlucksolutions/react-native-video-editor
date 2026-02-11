@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+// @ts-ignore - Peer dependency
 import { View, Text, StyleSheet } from 'react-native';
 // @ts-ignore - Peer dependency
 import FastImage from 'react-native-fast-image';

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+// @ts-ignore - Peer dependency
 import { StyleSheet, Dimensions, Platform, Text as RNText } from 'react-native';
 // @ts-ignore - Peer dependency
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';

@@ -1,6 +1,7 @@
 // src/components/VideoEditorHost.tsx
 
 import React, { useEffect, useRef, useState } from 'react';
+// @ts-ignore - Peer dependency
 import { Modal } from 'react-native';
 
 import { VideoEditorSDK } from './VideoEditorSDK';

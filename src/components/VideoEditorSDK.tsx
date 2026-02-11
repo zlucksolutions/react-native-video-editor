@@ -6,6 +6,7 @@ import {
   Dimensions,
   StatusBar,
   Image,
+  // @ts-ignore - Peer dependency
 } from 'react-native';
 
 import {

@@ -1,5 +1,13 @@
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Pressable, ScrollView, Text, Platform } from 'react-native';
+// @ts-ignore - Peer dependency
+import {
+  View,
+  Pressable,
+  ScrollView,
+  Text,
+  Platform,
+  Image,
+} from 'react-native';
 // @ts-ignore - Peer dependency
 import Animated, {
   useAnimatedScrollHandler,
@@ -43,7 +51,6 @@ import {
 import { deviceUtils } from '../../utils/deviceUtils';
 import { TimelineHeader } from '../timeline/TimelineHeader';
 import { createTimelineStyles } from './TimelineStyles';
-import { Image } from 'react-native';
 // @ts-ignore - Peer dependency
 import { MuteIcon, UnMuteIcon, TrashIcon } from '../../assets/icons/index.js';
 

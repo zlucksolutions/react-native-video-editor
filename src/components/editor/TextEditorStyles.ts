@@ -1,5 +1,6 @@
 // @ts-ignore - Peer dependency
 import { ScaledSheet } from 'react-native-size-matters';
+// @ts-ignore - Peer dependency
 import { StyleSheet } from 'react-native';
 import { deviceUtils } from '../../utils/deviceUtils';
 

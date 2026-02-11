@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+// @ts-ignore - Peer dependency
+import { View, Text, Pressable, Image } from 'react-native';
 // @ts-ignore - Peer dependency
 import { ScaledSheet } from 'react-native-size-matters';
 import { COLORS } from '../../constants/colors';
-import { Image } from 'react-native';
 import {
   PauseFilledIcon,
   PlayFilledIcon,

@@ -6,6 +6,7 @@ import {
   Dimensions,
   Pressable,
   Platform,
+  // @ts-ignore - Peer dependency
 } from 'react-native';
 // @ts-ignore - Peer dependency
 import Video, {

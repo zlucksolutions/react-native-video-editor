@@ -7,6 +7,7 @@ import {
   ScrollView,
   Keyboard,
   Platform,
+  // @ts-ignore - Peer dependency
 } from 'react-native';
 // @ts-ignore - Peer dependency
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -167,7 +168,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
   useEffect(() => {
     const keyboardWillShow = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (e) => {
+      (e: any) => {
         setIsKeyboardActive(true);
         setKeyboardHeight(e.endCoordinates.height);
       }

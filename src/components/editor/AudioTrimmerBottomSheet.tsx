@@ -12,6 +12,7 @@ import {
   Pressable,
   Platform,
   Image,
+  // @ts-ignore - Peer dependency
 } from 'react-native';
 // @ts-ignore - Peer dependency
 import Video from 'react-native-video';

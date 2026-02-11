@@ -1,5 +1,6 @@
 // src/native/VideoEditorNative.ts
 
+// @ts-ignore - Peer dependency
 import { NativeModules, Platform } from 'react-native';
 
 interface VideoEditorSdkModule {

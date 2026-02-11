@@ -1,3 +1,4 @@
+// @ts-ignore - Peer dependency
 import { View, Text, Pressable, FlatList, Image } from 'react-native';
 import { useRef } from 'react';
 // @ts-ignore - Peer dependency
@@ -171,7 +172,7 @@ export const BottomToolBar = ({
       <FlatList
         data={TOOLS}
         renderItem={renderToolItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item: any) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.toolsList}

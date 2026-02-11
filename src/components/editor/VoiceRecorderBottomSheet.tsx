@@ -7,6 +7,7 @@ import {
   Alert,
   ActivityIndicator,
   PermissionsAndroid,
+  // @ts-ignore - Peer dependency
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -24,33 +25,16 @@ import { Pressable as PressableGH } from 'react-native-gesture-handler';
 import type BottomSheet from '@gorhom/bottom-sheet';
 import { StyleFunction } from './VoiceRecorderBottomSheetStyles';
 import { CustomBottomSheet } from './CustomBottomSheet';
-
-// Safe imports with try-catch
-let Sound: any = null;
-let AudioEncoderAndroidType: any;
-let AudioSourceAndroidType: any;
-let AVEncoderAudioQualityIOSType: any;
-let OutputFormatAndroidType: any;
-let RNFS: any = null;
-
-try {
+import AudioRecorderPlayer, {
+  AudioEncoderAndroidType,
+  AudioSourceAndroidType,
+  AVEncoderAudioQualityIOSType,
+  AVEncodingOption,
+  OutputFormatAndroidType,
   // @ts-ignore - Peer dependency
-  const soundModule = require('react-native-nitro-sound');
-  Sound = soundModule.default || soundModule;
-  AudioEncoderAndroidType = soundModule.AudioEncoderAndroidType;
-  AudioSourceAndroidType = soundModule.AudioSourceAndroidType;
-  AVEncoderAudioQualityIOSType = soundModule.AVEncoderAudioQualityIOSType;
-  OutputFormatAndroidType = soundModule.OutputFormatAndroidType;
-} catch (e) {
-  console.warn('react-native-nitro-sound not available:', e);
-}
-
-try {
-  // @ts-ignore - Peer dependency
-  RNFS = require('react-native-fs');
-} catch (e) {
-  console.warn('react-native-fs not available:', e);
-}
+} from 'react-native-audio-recorder-player';
+// @ts-ignore - Peer dependency
+import RNFS from 'react-native-fs';
 
 const styles = StyleFunction();
 interface VoiceRecorderBottomSheetProps {
@@ -60,6 +44,9 @@ interface VoiceRecorderBottomSheetProps {
     uri: string;
     duration: number;
     start: number;
+    type: string;
+    id: string;
+    name?: string;
   }) => void;
   videoCurrentTime: number;
   videoDuration: number;
@@ -92,7 +79,12 @@ export const VoiceRecorderBottomSheet: React.FC<
   const [isStartingRecord, setIsStartingRecord] = useState(false);
   const [isStoppingRecord, setIsStoppingRecord] = useState(false);
   const [sheetIndex, setSheetIndex] = useState(isVisible ? 0 : -1);
+
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const audioRecorderPlayerRef = useRef<AudioRecorderPlayer>(
+    new AudioRecorderPlayer()
+  );
+  const audioRecorderPlayer = audioRecorderPlayerRef.current;
 
   // Calculate max recording duration based on next voiceover or video end
   const nextVoiceover = voiceoverSegments
@@ -105,28 +97,16 @@ export const VoiceRecorderBottomSheet: React.FC<
       1000
   );
 
+  const canRecord = maxRecordingDurationMs > 0;
+
   useEffect(() => {
     return () => {
-      try {
-        Sound.stopRecorder();
-        Sound.removeRecordBackListener();
-      } catch {
-        // Ignore cleanup errors
+      if (audioRecorderPlayer) {
+        audioRecorderPlayer.stopRecorder();
+        audioRecorderPlayer.removeRecordBackListener();
       }
     };
-  }, []);
-
-  // Additional cleanup when recording state changes
-  useEffect(() => {
-    if (!isRecording && !isVisible) {
-      // Clean up listener when not recording and sheet is closed
-      try {
-        Sound.removeRecordBackListener();
-      } catch {
-        // Ignore cleanup errors
-      }
-    }
-  }, [isRecording, isVisible]);
+  }, [audioRecorderPlayer]);
 
   useEffect(() => {
     if (isRecording) {
@@ -148,18 +128,28 @@ export const VoiceRecorderBottomSheet: React.FC<
     setSheetIndex(isVisible ? 0 : -1);
   }, [isVisible]);
 
+  useEffect(() => {
+    if (!isRecording && !isVisible) {
+      try {
+        audioRecorderPlayer.removeRecordBackListener();
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+  }, [isRecording, isVisible, audioRecorderPlayer]);
+
   const animatedOuter = useAnimatedStyle(() => ({
     transform: [{ scale: pulse.value }],
   }));
 
-  const prepareRecorder = async () => {
+  const prepareRecorder = useCallback(async () => {
     try {
-      Sound.removeRecordBackListener();
-      await Sound.stopRecorder();
+      await audioRecorderPlayer.stopRecorder();
+      audioRecorderPlayer.removeRecordBackListener();
     } catch {
-      // ignore
+      // ignore — usually "already stopped" errors
     }
-  };
+  }, [audioRecorderPlayer]);
 
   const requestAudioPermission = async () => {
     if (Platform.OS === 'android') {
@@ -184,20 +174,47 @@ export const VoiceRecorderBottomSheet: React.FC<
     return true;
   };
 
+  const formatTime = useCallback((timeInMillis: number) => {
+    const totalSeconds = Math.floor(timeInMillis / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }, []);
+
+  const resetRecordingState = useCallback(async () => {
+    setRecordTime(0);
+    setIsRecording(false);
+    setRecordedAudioUri(null);
+    setRecordingDuration(0);
+    setIsStartingRecord(false);
+    setIsStoppingRecord(false);
+  }, []);
+
+  useEffect(() => {
+    if (isVisible) {
+      resetRecordingState();
+    }
+  }, [isVisible, resetRecordingState]);
+
   const onStopRecord = useCallback(async () => {
     setIsStoppingRecord(true);
     try {
-      const resultUri = await Sound.stopRecorder();
-      Sound.removeRecordBackListener();
+      const resultUri = await audioRecorderPlayer.stopRecorder();
+      audioRecorderPlayer.removeRecordBackListener();
       setIsRecording(false);
       setRecordingDuration(recordTime);
       setRecordedAudioUri(resultUri);
-    } catch {
-      // handle error
+    } catch (error) {
+      setRecordedAudioUri(null);
+      setRecordingDuration(0);
+      Alert.alert(
+        'Recording Error',
+        `Failed to stop recording: ${error || 'Unknown error'}.`
+      );
     } finally {
       setIsStoppingRecord(false);
     }
-  }, [recordTime]);
+  }, [audioRecorderPlayer, recordTime]);
 
   const onStartRecord = useCallback(async () => {
     setIsStartingRecord(true);
@@ -210,10 +227,21 @@ export const VoiceRecorderBottomSheet: React.FC<
     }
 
     setRecordedAudioUri(null);
+    setRecordingDuration(0);
     setRecordTime(0);
+
+    const audioSet = {
+      AudioEncoderAndroid: AudioEncoderAndroidType.AAC,
+      AudioSourceAndroid: AudioSourceAndroidType.MIC,
+      OutputFormatAndroid: OutputFormatAndroidType.AAC_ADTS,
+      AVEncoderAudioQualityKeyIOS: AVEncoderAudioQualityIOSType.high,
+      AVNumberOfChannelsKeyIOS: 2,
+      AVFormatIDKeyIOS: AVEncodingOption.aac,
+    };
 
     try {
       await prepareRecorder();
+      await new Promise((resolve) => setTimeout(resolve, 100));
       const makeRecordingPath = () => {
         const ext = deviceUtils.isAndroid ? 'mp3' : 'm4a';
         const fileName = `voiceover_${Date.now()}_${Math.floor(
@@ -230,48 +258,29 @@ export const VoiceRecorderBottomSheet: React.FC<
       const documentsDir = deviceUtils.isAndroid
         ? RNFS.DocumentDirectoryPath
         : RNFS.CachesDirectoryPath;
-      const targetPath = deviceUtils.isAndroid
-        ? makeRecordingPath()
-        : undefined;
+      const targetPath = makeRecordingPath();
 
       try {
         const exists = await RNFS.exists(documentsDir);
         if (!exists) {
-          await RNFS.mkdir(documentsDir);
+          throw new Error(
+            'Recording directory does not exist and could not be created'
+          );
+          // await RNFS.mkdir(documentsDir);
         }
       } catch (e) {
         console.warn('RNFS dir check/mkdir failed', e);
       }
 
-      const audioSet = {
-        // Common settings
-        AudioSamplingRate: 44100,
-        AudioEncodingBitRate: 128000,
-        AudioChannels: 2,
-
-        // Android specific
-        AudioEncoderAndroid: AudioEncoderAndroidType.AAC,
-        AudioSourceAndroid: AudioSourceAndroidType.MIC,
-        OutputFormatAndroid: OutputFormatAndroidType.AAC_ADTS,
-
-        // iOS specific
-        AVEncoderAudioQualityKeyIOS: AVEncoderAudioQualityIOSType.high,
-        AVNumberOfChannelsKeyIOS: 2,
-        AVFormatIDKeyIOS: 'aac',
-      };
-
-      let result;
-      try {
-        result = await Sound.startRecorder(targetPath, audioSet);
-      } catch (pathError) {
-        console.warn('Custom path failed, using library default:', pathError);
-        result = await Sound.startRecorder(undefined, audioSet);
-      }
+      const result = await audioRecorderPlayer.startRecorder(
+        targetPath,
+        audioSet
+      );
 
       setRecordedAudioUri(result);
       setIsRecording(true);
 
-      Sound.addRecordBackListener((e: any) => {
+      audioRecorderPlayer.addRecordBackListener((e: any) => {
         if (e.currentPosition >= maxRecordingDurationMs) {
           setRecordTime(maxRecordingDurationMs);
           onStopRecord();
@@ -280,25 +289,21 @@ export const VoiceRecorderBottomSheet: React.FC<
         }
       });
     } catch (error: any) {
-      console.error('Recording failed:', error);
       Alert.alert(
         'Error',
         `Failed to start recording: ${error.message || 'Unknown error'}`
       );
       setIsRecording(false);
+      setRecordTime(0);
     } finally {
       setIsStartingRecord(false);
     }
-  }, [maxRecordingDurationMs, onStopRecord]);
-
-  const resetRecordingState = useCallback(() => {
-    setRecordTime(0);
-    setIsRecording(false);
-    setRecordedAudioUri(null);
-    setRecordingDuration(0);
-    setIsStartingRecord(false);
-    setIsStoppingRecord(false);
-  }, []);
+  }, [
+    audioRecorderPlayer,
+    maxRecordingDurationMs,
+    onStopRecord,
+    prepareRecorder,
+  ]);
 
   const handleDone = useCallback(() => {
     const finalDuration =
@@ -309,15 +314,19 @@ export const VoiceRecorderBottomSheet: React.FC<
         : maxRecordingDurationMs;
 
     if (recordedAudioUri && finalDuration > 0) {
+      const filename = recordedAudioUri.split('/').pop();
       const voiceoverData = {
         uri: recordedAudioUri,
         duration: finalDuration / 1000,
         start: videoCurrentTime,
+        type: 'voiceover',
+        id: `voiceover-${Date.now()}`,
+        name: filename,
       };
 
       onDone(voiceoverData);
       resetRecordingState();
-      bottomSheetRef.current?.close();
+      onClose();
     } else {
       Alert.alert('No Recording', 'Please record audio before proceeding.');
     }
@@ -329,6 +338,7 @@ export const VoiceRecorderBottomSheet: React.FC<
     maxRecordingDurationMs,
     onDone,
     resetRecordingState,
+    onClose,
   ]);
 
   const handleToggleRecording = useCallback(async (): Promise<void> => {
@@ -359,43 +369,25 @@ export const VoiceRecorderBottomSheet: React.FC<
     handleDone,
   ]);
 
-  const formatTime = useCallback((timeInMillis: number) => {
-    const totalSeconds = Math.floor(timeInMillis / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  }, []);
-
   const handleCancel = useCallback(() => {
     if (isRecording) {
-      Sound.stopRecorder();
-      Sound.removeRecordBackListener();
+      audioRecorderPlayer.stopRecorder();
+      audioRecorderPlayer.removeRecordBackListener();
     }
     resetRecordingState();
-    bottomSheetRef.current?.close();
-    setTimeout(() => {
-      onClose();
-    }, 500);
-  }, [isRecording, resetRecordingState, onClose]);
+    onClose();
+  }, [isRecording, audioRecorderPlayer, resetRecordingState, onClose]);
 
   const handleRequestClose = useCallback(() => {
     bottomSheetRef.current?.close();
   }, []);
 
-  useEffect(() => {
-    if (isVisible) {
-      resetRecordingState();
-    }
-  }, [isVisible, resetRecordingState]);
-
-  const canRecord = maxRecordingDurationMs > 0;
-
   // Check if dependencies are available - must be after all hooks
-  if (!Sound || !RNFS) {
+  if (!audioRecorderPlayer || !RNFS) {
     if (isVisible) {
       Alert.alert(
         'Dependencies Missing',
-        'Voice recording requires react-native-nitro-sound and react-native-fs to be installed and linked. Please install these dependencies and rebuild your app.'
+        'Voice recording requires react-native-audio-recorder-player and react-native-fs to be installed and linked. Please install these dependencies and rebuild your app.'
       );
       onClose();
     }

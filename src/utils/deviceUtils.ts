@@ -1,3 +1,4 @@
+// @ts-ignore - Peer dependency
 import { Platform, Dimensions, PixelRatio } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');

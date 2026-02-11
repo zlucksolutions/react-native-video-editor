@@ -1,4 +1,5 @@
 import React from 'react';
+// @ts-ignore - Peer dependency
 import { View, Text, Pressable, StatusBar, Image } from 'react-native';
 // @ts-ignore - Peer dependency
 import { ScaledSheet } from 'react-native-size-matters';

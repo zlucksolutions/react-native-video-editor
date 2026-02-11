@@ -1,6 +1,6 @@
 import React from 'react';
-import { Platform, requireNativeComponent, type ViewStyle } from 'react-native';
 // @ts-ignore - Peer dependency
+import { Platform, requireNativeComponent, type ViewStyle } from 'react-native';
 
 interface NativeWaveformViewProps {
   audioSource: string;

@@ -1,4 +1,5 @@
 import React, { forwardRef, useCallback } from 'react';
+// @ts-ignore - Peer dependency
 import { Keyboard, Text, TouchableOpacity, View } from 'react-native';
 // @ts-ignore - Peer dependency
 import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';

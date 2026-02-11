@@ -1,5 +1,6 @@
 // @ts-ignore - External dependency
 import { createThumbnail } from 'react-native-create-thumbnail';
+// @ts-ignore - Peer dependency
 import { Platform } from 'react-native';
 import type { ThumbnailData } from '../types/timeline';
 import { getTimelineWidth } from './timelineUtils';

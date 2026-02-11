@@ -12,6 +12,7 @@ import type {
   VoiceoverSegment,
 } from '../types/segments';
 import { PREVIEW_WIDTH, PREVIEW_HEIGHT } from '../constants/dimensions';
+// @ts-ignore - Peer dependency
 import { PixelRatio, Platform } from 'react-native';
 
 type VideoElement = {

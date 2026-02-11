@@ -1,3 +1,4 @@
+// @ts-ignore - Peer dependency
 import { Dimensions, Platform } from 'react-native';
 import { deviceUtils } from '../utils/deviceUtils';
 

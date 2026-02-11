@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useRef,
 } from 'react';
+// @ts-ignore - Peer dependency
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 // @ts-ignore - Peer dependency
 import { Pressable as GHPressable } from 'react-native-gesture-handler';
