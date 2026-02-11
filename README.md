@@ -83,7 +83,8 @@ npm install \
   react-native-safe-area-context \
   react-native-size-matters \
   react-native-video \
-  react-native-worklets
+  react-native-worklets \
+  react-native-audio-recorder-player
 ```
 
 Then run:

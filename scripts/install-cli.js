@@ -38,6 +38,7 @@ function logError(message) {
 // Peer dependencies that need to be installed
 const peerDependencies = [
   '@gorhom/bottom-sheet',
+  'react-native-audio-recorder-player',
   '@react-native-documents/picker',
   'react-native-create-thumbnail',
   'react-native-fast-image',
