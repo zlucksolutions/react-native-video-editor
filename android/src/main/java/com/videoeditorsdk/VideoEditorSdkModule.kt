@@ -632,9 +632,16 @@ class VideoProcessingModule(private val reactContext: ReactApplicationContext) :
                               videoRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?: 0L
                             videoRetriever.release()
 
+                            val audioRetriever = MediaMetadataRetriever()
+                            audioRetriever.setDataSource(reactContext, musicUri.toUri())
+                            val audioDurationMs = audioRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?: 0L
+                            audioRetriever.release()
+
                             val startTime = 0.0
-                            val endTime = videoDurationMs.toDouble()
+                            val endTime = if (isLooped) audioDurationMs.toDouble() else videoDurationMs.toDouble()
+
                             Log.d("VideoProcessing", "🎵 Applying BGM: $musicUri")
+                            Log.d("VideoProcessing", "   Audio duration: ${audioDurationMs}ms, Video duration: ${videoDurationMs}ms, Loop: $isLooped")
                             Log.d("VideoProcessing", "   Input URI: $currentVideoUri")
 
                             currentVideoUri = suspendCoroutine { cont ->
