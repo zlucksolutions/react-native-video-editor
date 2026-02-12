@@ -213,6 +213,10 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
     setIsTimelineVisible,
   ]);
 
+  const handleCancel = useCallback(() => {
+    onCloseEditor({ success: false });
+  }, [onCloseEditor]);
+
   // Animation effects
   useEffect(() => {
     layoutAnimation.value = withTiming(isTimelineVisible ? 1 : 0, {
@@ -309,6 +313,35 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
     setEditingTextElement(null);
     setActiveTool(null);
   }, [setIsTextEditorVisible, setEditingTextElement, setActiveTool]);
+
+  const handleVoiceoverClose = useCallback(() => {
+    setActiveTool(null);
+    if (isPlaying) setIsPlaying(false);
+  }, [setActiveTool, isPlaying, setIsPlaying]);
+
+  const handleVoiceoverDone = useCallback(
+    (voiceoverData: any) => {
+      const { duration } = getPlaybackState();
+      const endTime = Math.min(
+        voiceoverData.start + voiceoverData.duration,
+        duration
+      );
+      const newVoiceoverSegment: VoiceoverSegment = {
+        id: `voiceover-${Date.now()}-${Math.random()
+          .toString(36)
+          .substr(2, 9)}`,
+        type: 'voiceover',
+        start: voiceoverData.start,
+        end: endTime,
+        uri: voiceoverData.uri,
+        name: 'My Voiceover',
+        color: '#9C27B0',
+      };
+      addVoiceoverSegment(newVoiceoverSegment);
+      setActiveTool(null);
+    },
+    [getPlaybackState, addVoiceoverSegment, setActiveTool]
+  );
 
   // Animated styles
   const timelineSectionAnimatedStyle = useAnimatedStyle(() => {
@@ -502,10 +535,7 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
 
         {/* Header - Absolute Positioned at Top */}
         <Animated.View style={[styles.headerContainer, headerAnimatedStyle]}>
-          <TopBar
-            onCancel={() => onCloseEditor({ success: false })}
-            onExport={handleExport}
-          />
+          <TopBar onCancel={handleCancel} onExport={handleExport} />
         </Animated.View>
 
         {/* Swipe Indicator */}
@@ -602,30 +632,8 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
             videoCurrentTime={getPlaybackState().currentTime}
             videoDuration={getPlaybackState().duration}
             voiceoverSegments={voiceoverSegments}
-            onClose={() => {
-              setActiveTool(null);
-              if (isPlaying) setIsPlaying(false);
-            }}
-            onDone={(voiceoverData: any) => {
-              const { duration } = getPlaybackState();
-              const endTime = Math.min(
-                voiceoverData.start + voiceoverData.duration,
-                duration
-              );
-              const newVoiceoverSegment: VoiceoverSegment = {
-                id: `voiceover-${Date.now()}-${Math.random()
-                  .toString(36)
-                  .substr(2, 9)}`,
-                type: 'voiceover',
-                start: voiceoverData.start,
-                end: endTime,
-                uri: voiceoverData.uri,
-                name: 'My Voiceover',
-                color: '#9C27B0',
-              };
-              addVoiceoverSegment(newVoiceoverSegment);
-              setActiveTool(null);
-            }}
+            onClose={handleVoiceoverClose}
+            onDone={handleVoiceoverDone}
           />
         )}
 

@@ -1,6 +1,6 @@
 // @ts-ignore - Peer dependency
 import { View, Text, Pressable, FlatList, Image } from 'react-native';
-import { useRef } from 'react';
+import React, { useRef, useCallback } from 'react';
 // @ts-ignore - Peer dependency
 import { ScaledSheet } from 'react-native-size-matters';
 // @ts-ignore - Peer dependency
@@ -36,114 +36,20 @@ type BottomToolBarProps = {
   onExport?: () => void;
 };
 
-export const BottomToolBar = ({
-  onToolPress,
-  onExport,
-}: BottomToolBarProps) => {
-  const { setActiveTool, enabledTools, activeTool } = useEditorContext();
-  const {
-    setAudioUri,
-    setActiveSegment,
-    setIsTextEditorVisible,
-    setEditingTextElement,
-    isPlaying,
-    setIsPlaying,
-  } = useEditorState();
+type ToolItemProps = {
+  tool: (typeof TOOLS)[0];
+  isEnabled: boolean;
+  isSelected: boolean;
+  onPress: (id: EditorTool) => void;
+};
 
-  const wasPlayingBeforePickerRef = useRef(false);
-
-  const handleBGMPress = async () => {
-    try {
-      // Store previous playing state before pausing
-      wasPlayingBeforePickerRef.current = isPlaying;
-
-      if (isPlaying) {
-        setIsPlaying(false);
-      }
-
-      const [pickResult] = await pick({
-        type: [types.audio],
-        allowMultiSelection: false,
-      });
-
-      if (pickResult) {
-        try {
-          const [localCopy] = await keepLocalCopy({
-            files: [
-              {
-                uri: pickResult.uri,
-                fileName: pickResult.name ?? 'audio',
-              },
-            ],
-            destination: 'cachesDirectory',
-          });
-
-          const audioUriToUse =
-            localCopy?.localUri || localCopy?.uri || pickResult.uri;
-
-          if (audioUriToUse) {
-            setAudioUri(audioUriToUse);
-            setActiveTool('bgm');
-            return;
-          }
-        } catch (copyErr: any) {
-          console.warn('Failed to create local copy:', copyErr);
-          if (pickResult.uri) {
-            setAudioUri(pickResult.uri);
-            setActiveTool('bgm');
-            return;
-          }
-        }
-      }
-
-      if (wasPlayingBeforePickerRef.current) {
-        setIsPlaying(true);
-      }
-    } catch (err: any) {
-      console.error('Error picking audio:', err);
-      if (err?.code === 'DOCUMENT_PICKER_CANCELED') {
-        if (wasPlayingBeforePickerRef.current) {
-          setIsPlaying(true);
-        }
-      } else {
-        console.error('Audio picker error details:', err);
-        if (wasPlayingBeforePickerRef.current) {
-          setIsPlaying(true);
-        }
-      }
-    }
-  };
-
-  const renderToolItem = ({ item: tool }: { item: (typeof TOOLS)[0] }) => {
-    const isEnabled = enabledTools[tool.id] ?? true;
+const ToolItem = React.memo(
+  ({ tool, isEnabled, isSelected, onPress }: ToolItemProps) => {
     if (!isEnabled && tool.id !== 'save') return null;
-
-    const isSelected = activeTool === tool.id;
-
-    const handlePress = () => {
-      onToolPress?.();
-
-      if (tool.id === 'bgm') {
-        handleBGMPress();
-      } else if (tool.id === 'text') {
-        setEditingTextElement(null);
-        setIsTextEditorVisible(true);
-        if (isPlaying) setIsPlaying(false);
-        setActiveTool('text');
-      } else if (tool.id === 'save') {
-        // Trigger export
-        onExport?.();
-      } else {
-        if (tool.id === 'trim') {
-          setActiveSegment({ type: 'trim' });
-        }
-        setActiveTool(isSelected ? null : tool.id);
-      }
-    };
 
     return (
       <Pressable
-        onPress={handlePress}
+        onPress={() => onPress(tool.id)}
         style={[styles.toolCard, isSelected && styles.toolCardSelected]}
       >
         <LinearGradient
@@ -165,21 +71,150 @@ export const BottomToolBar = ({
         <Text style={styles.toolLabel}>{tool.label}</Text>
       </Pressable>
     );
-  };
+  }
+);
 
-  return (
-    <View style={styles.container}>
-      <FlatList
-        data={TOOLS}
-        renderItem={renderToolItem}
-        keyExtractor={(item: any) => item.id}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.toolsList}
-      />
-    </View>
-  );
-};
+export const BottomToolBar = React.memo(
+  ({ onToolPress, onExport }: BottomToolBarProps) => {
+    const { setActiveTool, enabledTools, activeTool } = useEditorContext();
+    const {
+      setAudioUri,
+      setActiveSegment,
+      setIsTextEditorVisible,
+      setEditingTextElement,
+      isPlaying,
+      setIsPlaying,
+    } = useEditorState();
+
+    const wasPlayingBeforePickerRef = useRef(false);
+
+    const handleBGMPress = useCallback(async () => {
+      try {
+        // Store previous playing state before pausing
+        wasPlayingBeforePickerRef.current = isPlaying;
+
+        if (isPlaying) {
+          setIsPlaying(false);
+        }
+
+        const [pickResult] = await pick({
+          type: [types.audio],
+          allowMultiSelection: false,
+        });
+
+        if (pickResult) {
+          try {
+            const [localCopy] = await keepLocalCopy({
+              files: [
+                {
+                  uri: pickResult.uri,
+                  fileName: pickResult.name ?? 'audio',
+                },
+              ],
+              destination: 'cachesDirectory',
+            });
+
+            const audioUriToUse =
+              localCopy?.localUri || localCopy?.uri || pickResult.uri;
+
+            if (audioUriToUse) {
+              setAudioUri(audioUriToUse);
+              setActiveTool('bgm');
+              return;
+            }
+          } catch (copyErr: any) {
+            console.warn('Failed to create local copy:', copyErr);
+            if (pickResult.uri) {
+              setAudioUri(pickResult.uri);
+              setActiveTool('bgm');
+              return;
+            }
+          }
+        }
+
+        if (wasPlayingBeforePickerRef.current) {
+          setIsPlaying(true);
+        }
+      } catch (err: any) {
+        console.error('Error picking audio:', err);
+        if (err?.code === 'DOCUMENT_PICKER_CANCELED') {
+          if (wasPlayingBeforePickerRef.current) {
+            setIsPlaying(true);
+          }
+        } else {
+          console.error('Audio picker error details:', err);
+          if (wasPlayingBeforePickerRef.current) {
+            setIsPlaying(true);
+          }
+        }
+      }
+    }, [isPlaying, setIsPlaying, setAudioUri, setActiveTool]);
+
+    const handlePress = useCallback(
+      (toolId: EditorTool) => {
+        onToolPress?.();
+
+        if (toolId === 'bgm') {
+          handleBGMPress();
+        } else if (toolId === 'text') {
+          setEditingTextElement(null);
+          setIsTextEditorVisible(true);
+          if (isPlaying) setIsPlaying(false);
+          setActiveTool('text');
+        } else if (toolId === 'save') {
+          // Trigger export
+          onExport?.();
+        } else {
+          if (toolId === 'trim') {
+            setActiveSegment({ type: 'trim' });
+          }
+          setActiveTool(activeTool === toolId ? null : toolId);
+        }
+      },
+      [
+        onToolPress,
+        handleBGMPress,
+        setEditingTextElement,
+        setIsTextEditorVisible,
+        isPlaying,
+        setIsPlaying,
+        setActiveTool,
+        setActiveSegment,
+        activeTool,
+        onExport,
+      ]
+    );
+
+    const renderToolItem = useCallback(
+      ({ item: tool }: { item: (typeof TOOLS)[0] }) => {
+        return (
+          <ToolItem
+            tool={tool}
+            isEnabled={enabledTools[tool.id] ?? true}
+            isSelected={activeTool === tool.id}
+            onPress={handlePress}
+          />
+        );
+      },
+      [enabledTools, activeTool, handlePress]
+    );
+
+    const keyExtractor = useCallback((item: any) => item.id, []);
+
+    return (
+      <View style={styles.container}>
+        <FlatList
+          data={TOOLS}
+          renderItem={renderToolItem}
+          keyExtractor={keyExtractor}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.toolsList}
+        />
+      </View>
+    );
+  }
+);
 
 const styles = ScaledSheet.create({
   container: {

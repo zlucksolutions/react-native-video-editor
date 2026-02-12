@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 // @ts-ignore - Peer dependency
 import { View, Text, Pressable, StatusBar, Image } from 'react-native';
 // @ts-ignore - Peer dependency
@@ -15,19 +15,20 @@ type Props = {
   onExport: () => void;
 };
 
-export const TopBar: React.FC<Props> = ({ onCancel, onExport }) => {
+export const TopBar: React.FC<Props> = React.memo(({ onCancel, onExport }) => {
   const { top } = useSafeAreaInsets();
+
+  const headerStyle = useMemo(
+    () => ({
+      paddingTop: deviceUtils.isAndroid
+        ? (StatusBar.currentHeight || 20) + 10
+        : top,
+    }),
+    [top]
+  );
+
   return (
-    <View
-      style={[
-        styles.header,
-        {
-          paddingTop: deviceUtils.isAndroid
-            ? (StatusBar.currentHeight || 20) + 10
-            : top,
-        },
-      ]}
-    >
+    <View style={[styles.header, headerStyle]}>
       <Pressable onPress={onCancel} style={styles.headerButton}>
         <View style={styles.closeIconPlaceholder}>
           <Image
@@ -38,10 +39,6 @@ export const TopBar: React.FC<Props> = ({ onCancel, onExport }) => {
         </View>
       </Pressable>
 
-      {/* <View style={styles.titleContainer}>
-        <Text style={styles.headerTitle}>Edit Video</Text>
-      </View> */}
-
       <Pressable
         onPress={onExport}
         style={[styles.headerButton, styles.nextButton]}
@@ -50,7 +47,7 @@ export const TopBar: React.FC<Props> = ({ onCancel, onExport }) => {
       </Pressable>
     </View>
   );
-};
+});
 
 const styles = ScaledSheet.create({
   header: {
