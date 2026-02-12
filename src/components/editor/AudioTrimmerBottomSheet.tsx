@@ -117,7 +117,6 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
   const [audioDuration, setAudioDuration] = useState(0);
   const [selectDuration, setSelectDuration] = useState(maxDuration);
   const [offsetSec, setOffsetSec] = useState(0);
-  const [playbackTime, setPlaybackTime] = useState(0);
   const [isLooped, setIsLooped] = useState(false);
   const [isAudioPaused, setIsAudioPaused] = useState(true);
 
@@ -149,7 +148,6 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
       setAudioDuration(0);
       setSelectDuration(maxDuration);
       setOffsetSec(0);
-      setPlaybackTime(0);
       setIsLooped(false);
       setIsAudioPaused(true);
       lastVideoTimeRef.current = 0;
@@ -215,7 +213,6 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
     if (isShortAudio && lastVideoTimeRef.current > 1 && videoCurrentTime < 1) {
       if (audioPlayerRef.current) {
         audioPlayerRef.current.seek(offsetSec);
-        setPlaybackTime(0);
         lastSyncTimeRef.current = 0;
       }
     }
@@ -241,18 +238,19 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
       setIsAudioPaused(true);
     }
 
-    // Calculate relative playback time for progress display
-    const currentRelativeTime =
-      isShortAudio && isLooped
-        ? videoCurrentTime % audioDuration
-        : isLooped
-        ? videoCurrentTime % selectDuration
-        : clamp(videoCurrentTime, 0, selectDuration);
-    setPlaybackTime(currentRelativeTime);
-
-    // For short audio, let the audio player handle playback naturally
-    // Only sync for long audio files when there's a significant time jump
-    if (!isShortAudio && shouldBePlaying && !isAudioPausedRef.current) {
+    // For short audio, we want to let the audio player handle its own repeat
+    // but we use videoCurrentTime as the master sync source for the UI progress
+    if (isShortAudio) {
+      if (shouldBePlaying && !isAudioPausedRef.current) {
+        // Sync audio position when starting to play or if video loops
+        if (
+          Math.abs(videoCurrentTime - lastVideoTimeRef.current) > 0.5 ||
+          lastSyncTimeRef.current === 0
+        ) {
+          syncPlayer(videoCurrentTime);
+        }
+      }
+    } else if (shouldBePlaying && !isAudioPausedRef.current) {
       const timeDiff = Math.abs(videoCurrentTime - lastVideoTimeRef.current);
       // Only sync if there's a significant jump (user seeked) or it's the first sync
       if (timeDiff > 1.0 || lastSyncTimeRef.current === 0) {
@@ -274,12 +272,11 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
   ]);
 
   const handleInternalProgress = (data: any) => {
-    if (isUserScrolling.current || isAudioPausedRef.current || isShortAudio) {
+    if (isUserScrolling.current || isAudioPausedRef.current) {
       return;
     }
     const relativeTime = data.currentTime - offsetSec;
     if (!isLooped && relativeTime >= selectDuration) {
-      setPlaybackTime(selectDuration);
       setIsAudioPaused(true);
 
       audioPlayerRef.current?.seek(offsetSec);
@@ -287,7 +284,7 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
     }
 
     if (!isAudioPausedRef.current) {
-      setPlaybackTime(clamp(relativeTime, 0, selectDuration));
+      // Logic removed as progress tracks video
     }
   };
 
@@ -376,14 +373,11 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
       ? SELECT_WIDTH
       : (audioDuration / maxDuration) * SELECT_WIDTH;
   }
-  const progressNumerator = isShortAudio ? videoCurrentTime : playbackTime;
-  const progressDenominator = isShortAudio ? maxDuration : selectDuration;
-  const playbackProgressPercent =
-    progressDenominator > 0
-      ? (clamp(progressNumerator, 0, progressDenominator) /
-          progressDenominator) *
-        100
-      : 0;
+  // Calculate gradient fill progress - always based on video duration box
+  const playbackProgressPercent = useMemo(() => {
+    if (maxDuration <= 0) return 0;
+    return (clamp(videoCurrentTime, 0, maxDuration) / maxDuration) * 100;
+  }, [maxDuration, videoCurrentTime]);
 
   // All hooks must be called before any early returns
   const contentContainerStyle = useMemo(

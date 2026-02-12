@@ -182,13 +182,20 @@ export const VoiceRecorderBottomSheet: React.FC<
   }, []);
 
   const resetRecordingState = useCallback(async () => {
+    // Clean up any existing listeners
+    try {
+      audioRecorderPlayer.removeRecordBackListener();
+    } catch {
+      // Ignore - may not have a listener attached
+    }
+
     setRecordTime(0);
     setIsRecording(false);
     setRecordedAudioUri(null);
     setRecordingDuration(0);
     setIsStartingRecord(false);
     setIsStoppingRecord(false);
-  }, []);
+  }, [audioRecorderPlayer]);
 
   useEffect(() => {
     if (isVisible) {
@@ -242,35 +249,22 @@ export const VoiceRecorderBottomSheet: React.FC<
     try {
       await prepareRecorder();
       await new Promise((resolve) => setTimeout(resolve, 100));
-      const makeRecordingPath = () => {
-        const ext = deviceUtils.isAndroid ? 'mp3' : 'm4a';
-        const fileName = `voiceover_${Date.now()}_${Math.floor(
-          Math.random() * 10000
-        )}.${ext}`;
-        const basePath = deviceUtils.isAndroid
-          ? RNFS.DocumentDirectoryPath
-          : RNFS.CachesDirectoryPath;
-
-        const fullPath = `${basePath}/${fileName}`;
-        return deviceUtils.isIOS ? `file://${fullPath}` : fullPath;
-      };
-
-      const documentsDir = deviceUtils.isAndroid
+      // Determine base path (OS-provided directories always exist)
+      const basePath = deviceUtils.isAndroid
         ? RNFS.DocumentDirectoryPath
         : RNFS.CachesDirectoryPath;
-      const targetPath = makeRecordingPath();
 
-      try {
-        const exists = await RNFS.exists(documentsDir);
-        if (!exists) {
-          throw new Error(
-            'Recording directory does not exist and could not be created'
-          );
-          // await RNFS.mkdir(documentsDir);
-        }
-      } catch (e) {
-        console.warn('RNFS dir check/mkdir failed', e);
-      }
+      // Generate unique filename
+      const ext = deviceUtils.isAndroid ? 'mp3' : 'm4a';
+      const fileName = `voiceover_${Date.now()}_${Math.floor(
+        Math.random() * 10000
+      )}.${ext}`;
+
+      // Create full path with proper format for each platform
+      const fullPath = `${basePath}/${fileName}`;
+      const targetPath = deviceUtils.isIOS ? `file://${fullPath}` : fullPath;
+
+      console.log('[VoiceRecorder] Recording path:', targetPath);
 
       const result = await audioRecorderPlayer.startRecorder(
         targetPath,
@@ -305,7 +299,7 @@ export const VoiceRecorderBottomSheet: React.FC<
     prepareRecorder,
   ]);
 
-  const handleDone = useCallback(() => {
+  const handleDone = useCallback(async () => {
     const finalDuration =
       recordingDuration > 0
         ? recordingDuration
@@ -314,6 +308,20 @@ export const VoiceRecorderBottomSheet: React.FC<
         : maxRecordingDurationMs;
 
     if (recordedAudioUri && finalDuration > 0) {
+      // Ensure recording is fully stopped before proceeding
+      if (isRecording) {
+        try {
+          await audioRecorderPlayer.stopRecorder();
+          audioRecorderPlayer.removeRecordBackListener();
+          setIsRecording(false);
+        } catch (error) {
+          console.warn(
+            '[VoiceRecorder] Error stopping recorder in handleDone:',
+            error
+          );
+        }
+      }
+
       const filename = recordedAudioUri.split('/').pop();
       const voiceoverData = {
         uri: recordedAudioUri,
@@ -325,7 +333,7 @@ export const VoiceRecorderBottomSheet: React.FC<
       };
 
       onDone(voiceoverData);
-      resetRecordingState();
+      await resetRecordingState();
       onClose();
     } else {
       Alert.alert('No Recording', 'Please record audio before proceeding.');
@@ -336,6 +344,8 @@ export const VoiceRecorderBottomSheet: React.FC<
     recordTime,
     videoCurrentTime,
     maxRecordingDurationMs,
+    isRecording,
+    audioRecorderPlayer,
     onDone,
     resetRecordingState,
     onClose,
@@ -369,12 +379,19 @@ export const VoiceRecorderBottomSheet: React.FC<
     handleDone,
   ]);
 
-  const handleCancel = useCallback(() => {
+  const handleCancel = useCallback(async () => {
     if (isRecording) {
-      audioRecorderPlayer.stopRecorder();
-      audioRecorderPlayer.removeRecordBackListener();
+      try {
+        await audioRecorderPlayer.stopRecorder();
+        audioRecorderPlayer.removeRecordBackListener();
+      } catch (error) {
+        console.warn(
+          '[VoiceRecorder] Error stopping recorder in handleCancel:',
+          error
+        );
+      }
     }
-    resetRecordingState();
+    await resetRecordingState();
     onClose();
   }, [isRecording, audioRecorderPlayer, resetRecordingState, onClose]);
 

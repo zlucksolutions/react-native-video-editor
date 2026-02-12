@@ -584,14 +584,14 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
               // Add audio segment - native module receives audioOffset and will start audio from that position
               // when video is at segment start time (0)
               addAudioSegment(newAudioSegment);
-              // Use requestAnimationFrame to ensure native module has processed the operation
-              requestAnimationFrame(() => {
+              // Use setTimeout to ensure native module has processed the operation
+              setTimeout(() => {
                 // Additional small delay to ensure audio is initialized at audioOffset
                 setTimeout(() => {
                   // Start playing - native module should now start audio from audioOffset position
                   setIsPlaying(true);
                 }, 150);
-              });
+              }, 16); // ~1 frame at 60fps
             }}
           />
         </Animated.View>

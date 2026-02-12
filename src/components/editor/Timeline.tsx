@@ -7,8 +7,8 @@ import {
   Text,
   Platform,
   Image,
+  // @ts-ignore - Peer dependency
 } from 'react-native';
-// @ts-ignore - Peer dependency
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
