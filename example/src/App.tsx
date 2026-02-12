@@ -33,7 +33,7 @@ export default function App() {
       // Check if user cancelled
       if (err?.message === 'User canceled document picker') {
       } else {
-        Alert.alert('Error', 'Failed to pick video from device');
+        Alert.alert('Cancel', 'User cancelled video selection');
       }
     }
   };
@@ -65,7 +65,7 @@ export default function App() {
         // Open the modal to play the video
         setIsModalVisible(true);
       } else if (!result.success) {
-        Alert.alert('Export Failed', result.error || 'Unknown error');
+        Alert.alert('Cancel', 'User cancelled video editor');
       }
     } catch (e: any) {
       Alert.alert('Error', 'Failed to open video editor', e.message || e);

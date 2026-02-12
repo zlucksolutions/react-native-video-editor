@@ -18,8 +18,8 @@ const normalizeVideoUri = (uri: string): string => {
       path = decodeURIComponent(path);
 
       return `file://${path}`;
-    } catch (error) {
-      console.error('Error normalizing URI:', error);
+    } catch {
+      // console.error('Error normalizing URI:', error);
       return uri;
     }
   }
@@ -33,15 +33,15 @@ export const generateThumbnails = async (
 ): Promise<ThumbnailData[]> => {
   try {
     if (!videoUri || typeof videoUri !== 'string' || videoUri.trim() === '') {
-      console.error(
-        'Invalid videoUri provided to generateThumbnails:',
-        videoUri
-      );
+      // console.error(
+      //   'Invalid videoUri provided to generateThumbnails:',
+      //   videoUri
+      // );
       return [];
     }
 
     if (!videoDuration || videoDuration <= 0) {
-      console.error('Invalid videoDuration provided:', videoDuration);
+      // console.error('Invalid videoDuration provided:', videoDuration);
       return [];
     }
 
@@ -103,20 +103,7 @@ export const generateThumbnails = async (
               }
               throw new Error('Invalid thumbnail path');
             })
-            .catch((err: any) => {
-              console.error(
-                `❌ [Thumbnails] Failed to generate thumbnail at ${Math.floor(
-                  timeStampMs
-                )}ms`,
-                {
-                  error: err?.message || err,
-                  errorCode: err?.code || 'unknown',
-                  platform: Platform.OS,
-                  originalUri: videoUri,
-                  normalizedUri: normalizedUri,
-                  index,
-                }
-              );
+            .catch(() => {
               return {
                 uri: '',
                 width: thumbnailPixelWidth,
@@ -156,8 +143,8 @@ export const generateThumbnails = async (
     }
 
     return allResults;
-  } catch (error) {
-    console.error('Thumbnail generation error:', error);
+  } catch {
+    // console.error('Thumbnail generation error:', error);
     return [];
   }
 };
@@ -169,15 +156,15 @@ export const regenerateThumbnailsForTrim = async (
   onProgress?: (thumbnails: ThumbnailData[]) => void
 ): Promise<ThumbnailData[]> => {
   if (!videoUri || typeof videoUri !== 'string' || videoUri.trim() === '') {
-    console.error(
-      'Invalid videoUri provided to regenerateThumbnailsForTrim:',
-      videoUri
-    );
+    // console.error(
+    //   'Invalid videoUri provided to regenerateThumbnailsForTrim:',
+    //   videoUri
+    // );
     return [];
   }
 
   if (!duration || duration <= 0) {
-    console.error('Invalid duration provided:', duration);
+    // console.error('Invalid duration provided:', duration);
     return [];
   }
 
@@ -233,15 +220,7 @@ export const regenerateThumbnailsForTrim = async (
               }
               throw new Error('Invalid thumbnail path');
             })
-            .catch((err: any) => {
-              console.error(`❌ [Trim Thumbnails] Failed at ${timeStampMs}ms`, {
-                error: err?.message || err,
-                errorCode: err?.code || 'unknown',
-                platform: Platform.OS,
-                originalUri: videoUri,
-                normalizedUri: normalizedUri,
-                index,
-              });
+            .catch(() => {
               return {
                 uri: '',
                 width: thumbnailPixelWidth,
@@ -280,8 +259,8 @@ export const regenerateThumbnailsForTrim = async (
       }
     }
     return allResults;
-  } catch (error) {
-    console.error('Trim thumbnail regeneration error:', error);
+  } catch {
+    // console.error('Trim thumbnail regeneration error:', error);
     return [];
   }
 };
