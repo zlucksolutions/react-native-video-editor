@@ -146,6 +146,70 @@ function installPeerDependencies(packageManager) {
   }
 }
 
+// Copy patches from package to user's project
+function copyPatches() {
+  logStep('🔧', 'Setting up patches for peer dependencies...');
+
+  try {
+    // Find the package's patches directory
+    const packagePatchesDir = path.join(__dirname, '..', 'patches');
+
+    // Check if patches directory exists in the package
+    if (!fs.existsSync(packagePatchesDir)) {
+      log('   No patches found in package', 'blue');
+      return;
+    }
+
+    // Create patches directory in user's project if it doesn't exist
+    const userPatchesDir = path.join(process.cwd(), 'patches');
+    if (!fs.existsSync(userPatchesDir)) {
+      fs.mkdirSync(userPatchesDir, { recursive: true });
+      log('   Created patches directory', 'green');
+    }
+
+    // Copy all patch files
+    const patchFiles = fs.readdirSync(packagePatchesDir);
+    let copiedCount = 0;
+
+    patchFiles.forEach((file) => {
+      if (file.endsWith('.patch')) {
+        const sourcePath = path.join(packagePatchesDir, file);
+        const destPath = path.join(userPatchesDir, file);
+        fs.copyFileSync(sourcePath, destPath);
+        log(`   ✓ Copied ${file}`, 'green');
+        copiedCount++;
+      }
+    });
+
+    if (copiedCount > 0) {
+      logSuccess(`Copied ${copiedCount} patch file(s)`);
+    } else {
+      log('   No patch files to copy', 'blue');
+    }
+  } catch (error) {
+    logWarning('Failed to copy patch files');
+    logError(error.message);
+  }
+}
+
+// Apply patches for peer dependencies
+function applyPatches() {
+  logStep('🔧', 'Applying patches to peer dependencies...');
+
+  try {
+    // Check if patch-package is available
+    execSync('npx patch-package --version', { stdio: 'pipe' });
+
+    // Apply patches
+    execSync('npx patch-package', { stdio: 'inherit', cwd: process.cwd() });
+    logSuccess('Patches applied successfully!');
+  } catch {
+    logWarning('patch-package not found or patches failed to apply');
+    log('   You may need to install patch-package:', 'yellow');
+    log('   npm install patch-package --save-dev', 'yellow');
+  }
+}
+
 // Check if iOS directory exists
 function hasIosDirectory() {
   return fs.existsSync(path.join(process.cwd(), 'ios'));
@@ -280,6 +344,12 @@ function main() {
 
   // Install peer dependencies
   installPeerDependencies(packageManager);
+
+  // Copy patches to user's project
+  copyPatches();
+
+  // Apply patches
+  applyPatches();
 
   // Run pod install for iOS
   runPodInstall();
