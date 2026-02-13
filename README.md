@@ -59,8 +59,64 @@ This will automatically:
 
 - ✅ Detect your package manager (npm/yarn/pnpm)
 - ✅ Install all 15 required peer dependencies
+- ✅ Apply patches to peer dependencies
 - ✅ Run `pod install` for iOS
 - ✅ Display setup instructions
+
+---
+
+### 2.1. Enable automatic patch application
+
+To ensure patches are applied whenever you install dependencies, add the following to your **project's** `package.json`:
+
+```json
+{
+  "scripts": {
+    "postinstall": "patch-package"
+  },
+  "devDependencies": {
+    "patch-package": "^8.0.1"
+  }
+}
+```
+
+Then install `patch-package`:
+
+```sh
+npm install --save-dev patch-package
+```
+
+or
+
+```sh
+yarn add -D patch-package
+```
+
+> **Why is this needed?**
+> This package includes patches for some peer dependencies (like `react-native-audio-recorder-player`) to fix known issues. The `postinstall` script ensures these patches are automatically applied after every `npm install` or `yarn install`.
+
+### 2.2. Manual Patching (Alternative)
+
+If you don't want to use `patch-package` automatically, you can apply the patch manually:
+
+1. Locate the patch file in your project:
+   `node_modules/@zlucksolutions/react-native-video-editor/patches/react-native-audio-recorder-player+3.6.14.patch`
+
+2. Copy it to your project root `patches` folder:
+   ```sh
+   mkdir -p patches
+   cp node_modules/@zlucksolutions/react-native-video-editor/patches/react-native-audio-recorder-player+3.6.14.patch patches/
+   ```
+
+3. Apply it using `patch`:
+   ```sh
+   patch -p1 < patches/react-native-audio-recorder-player+3.6.14.patch
+   ```
+
+You can also view/download the patch file directly from the repository:
+[Download Patch](https://github.com/zlucksolutions/react-native-video-editor/blob/main/patches/react-native-audio-recorder-player+3.6.14.patch)
+
+---
 
 <details>
 <summary>📦 <strong>Manual Installation (Alternative)</strong></summary>
