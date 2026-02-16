@@ -16,8 +16,11 @@ export const COLORS = {
   // Queryloom Colors
   PRIMARY_GRADIENT: ['#E3196A', '#FE9050'], // Pink to Orange
   ACCENT_PINK: '#E3196A',
+  ACCENT_PINK_GRADIENT: '#E3196A',
   ACCENT_ORANGE: '#FE9050',
   PRIMARY_YELLOW: '#FFD700',
+  DISCARD_PINK: '#FFE4E1',
+  KEEP_GREEN: '#E0FFE0',
 };
 
 // Text/Caption color options

@@ -42,6 +42,8 @@ import { Timeline } from './editor/Timeline';
 import { CropBottomSheet } from './editor/CropBottomSheet';
 import { BottomToolBar } from './editor/BottomToolBar';
 import { TopBar } from './editor/TopBar';
+// @ts-ignore - Peer dependency
+import { BinIcon } from '../assets/icons';
 import { AudioTrimmerBottomSheet } from './editor/AudioTrimmerBottomSheet';
 // Conditionally import VoiceRecorderBottomSheet
 let VoiceRecorderBottomSheet: any = null;
@@ -59,6 +61,7 @@ import type {
   VoiceoverSegment,
 } from '../types/segments';
 import { PREVIEW_HEIGHT, FONT_SIZE_MIN } from '../constants/dimensions';
+import { EditorModal } from './editor/EditorModal';
 // @ts-ignore - Peer dependency
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -138,6 +141,7 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
   const [containerHeight, setContainerHeight] = useState(0);
   const [toolBarHeight, setToolBarHeight] = useState(0);
   const [isTimelineVisible, setIsTimelineVisible] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const safeMargin = deviceUtils.isSmallIphone() ? toolBarHeight / 1.6 : 0;
   const safeSpaceBottom = deviceUtils.isSmallIphone()
     ? toolBarHeight / 3
@@ -188,6 +192,7 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
 
   const handleExport = useCallback(async () => {
     try {
+      setIsExporting(true);
       // Hide timeline before export
       if (isTimelineVisible) {
         setIsTimelineVisible(false);
@@ -196,11 +201,11 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
       }
 
       const config = buildExportConfig();
-      console.log('config', config);
-      // return;
       const exportedUri = await VideoEditorNative.applyEdits(config);
+      setIsExporting(false);
       onCloseEditor({ success: true, exportedUri });
     } catch (e: any) {
+      setIsExporting(false);
       onCloseEditor({
         success: false,
         error: e?.message ?? 'Export failed',
@@ -253,6 +258,13 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
       setIsTimelineVisible(true);
     }
   }, [activeTool]);
+
+  useEffect(() => {
+    // Pause video when voiceover recorder opens
+    if (activeTool === 'voiceover') {
+      setIsPlaying(false);
+    }
+  }, [activeTool, setIsPlaying]);
 
   // Timeline Section - Absolute Positioned at Bottom
   const handleTextEditorDone = useCallback(
@@ -651,10 +663,17 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
           <View style={styles.deleteZoneContainer}>
             <Text style={styles.deleteZoneText}>Drag here to delete</Text>
             <View style={styles.deleteZoneCircle}>
-              <Text style={styles.deleteTextIcon}>🗑️</Text>
+              <Image style={styles.deleteZoneIcon} source={BinIcon} />
             </View>
           </View>
         )}
+
+        <EditorModal
+          visible={isExporting}
+          type="loader"
+          title="Processing..."
+          message="Please wait while we process your video."
+        />
       </View>
     </GestureHandlerRootView>
   );
@@ -780,12 +799,14 @@ const styles = ScaledSheet.create({
   deleteZoneCircle: {
     width: '60@ms',
     height: '60@ms',
+    borderWidth: '1@ms',
+    borderColor: '#fff',
     borderRadius: '30@ms',
-    backgroundColor: 'rgba(255, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  deleteTextIcon: {
-    fontSize: '24@ms',
+  deleteZoneIcon: {
+    height: '24@ms',
+    width: '24@ms',
   },
 });
