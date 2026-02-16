@@ -24,7 +24,7 @@ This library provides a ready-to-use video editor UI (similar to social media ed
   <img src="assets/gifs/bgm.gif" width="32%" />
 </p>
 <p align="center">
-  <img src="assets/gifs/textoverlay.gif" width="32%" />
+  <img src="assets/gifs/textover.gif" width="32%" />
   <img src="assets/gifs/record_voice.gif" width="32%" />
 </p>
 
