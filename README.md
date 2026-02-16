@@ -26,7 +26,7 @@ This library provides a ready-to-use video editor UI (similar to social media ed
 
 | Text Overlays | Voice-over |
 | :---: | :---: |
-| ![Text](assets/gifs/Textoverlay.gif) | ![Voice](assets/gifs/record_voice.gif) |
+| ![Text](assets/gifs/textoverlay.gif) | ![Voice](assets/gifs/record_voice.gif) |
 
 ---
 
