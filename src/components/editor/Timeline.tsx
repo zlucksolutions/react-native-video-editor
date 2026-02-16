@@ -31,8 +31,12 @@ import {
 } from 'react-native-gesture-handler';
 import { useEditorState } from '../../context/EditorStateContext';
 import { useEditorContext } from '../../context/EditorContext';
-// @ts-ignore - Peer dependency
-import { pick, keepLocalCopy, types } from '@react-native-documents/picker';
+import {
+  pick,
+  keepLocalCopy,
+  types,
+  // @ts-ignore - Peer dependency
+} from '@react-native-documents/picker';
 import { useThumbnails } from '../../hooks/useThumbnails';
 import { useTrimming } from '../../hooks/useTrimming';
 import {
@@ -124,7 +128,7 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
       getTrimTimes,
     } = trimming;
 
-    const styles = createTimelineStyles();
+    const styles = useMemo(() => createTimelineStyles(), []);
 
     // Generate thumbnails - source should already be resolved to URI string by VideoEditorSDK
     const validVideoSource =
@@ -573,14 +577,16 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
           allowMultiSelection: false,
         });
 
-        if (pickResult) {
+        const selectedFile = [pickResult]?.[0];
+
+        if (selectedFile) {
           try {
             // Create a local copy for better file handling
             const [localCopy] = await keepLocalCopy({
               files: [
                 {
-                  uri: pickResult.uri,
-                  fileName: pickResult.name ?? 'audio',
+                  uri: selectedFile.uri,
+                  fileName: selectedFile.name ?? 'audio',
                 },
               ],
               destination: 'cachesDirectory',
@@ -588,7 +594,7 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
 
             // Use localUri if available, otherwise fall back to uri
             const audioUriToUse =
-              localCopy?.localUri || localCopy?.uri || pickResult.uri;
+              localCopy?.localUri || localCopy?.uri || selectedFile.uri;
 
             if (audioUriToUse) {
               setAudioUri(audioUriToUse);
@@ -598,17 +604,21 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
           } catch (copyErr: any) {
             console.warn('Failed to create local copy:', copyErr);
             // Fallback to original URI if local copy fails
-            if (pickResult.uri) {
-              setAudioUri(pickResult.uri);
+            if (selectedFile.uri) {
+              setAudioUri(selectedFile.uri);
               setActiveTool('bgm');
             }
           }
         }
       } catch (err: any) {
-        console.error('Error picking audio:', err);
+        // Handle cancellation manually as isCancel might be undefined
+        const isCancelled =
+          err?.code === 'DOCUMENT_PICKER_CANCELED' ||
+          err?.message === 'User canceled document picker';
+
         // Don't set active tool if user cancelled or error occurred
-        if (err?.code !== 'DOCUMENT_PICKER_CANCELED') {
-          console.error('Audio picker error details:', err);
+        if (!isCancelled) {
+          console.error('Audio picker error:', err);
         }
       }
     };
@@ -810,6 +820,111 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
       ],
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [isTextActive]
+    );
+
+    // Define text gesture handlers at the top level to follow Rules of Hooks
+    const textLeftHandleGestureHandler = useMemo(
+      () =>
+        Gesture.Pan()
+          .enabled(isTextActive && !!activeTextSegment)
+          .onStart(() => {
+            'worklet';
+            textStartX.value = activeTextTrimStart.value;
+            runOnJS(setIsDraggingHandle)(true);
+            if (isPlaying) runOnJS(setIsPlaying)(false);
+          })
+          .onUpdate((event: any) => {
+            'worklet';
+            const newStart = Math.max(
+              0,
+              Math.min(
+                activeTextTrimEnd.value - MIN_DURATION_PIXELS,
+                textStartX.value + event.translationX
+              )
+            );
+            activeTextTrimStart.value = newStart;
+
+            const timelineW = gestureContext.value.videoDuration
+              ? trimTimelineWidth.value
+              : 1;
+            const newTime =
+              (newStart / timelineW) * gestureContext.value.videoDuration;
+
+            if (gestureContext.value.activeSegment?.id) {
+              runOnJS(gestureContext.value.updateTextSegmentStart)(
+                gestureContext.value.activeSegment.id,
+                newTime
+              );
+            }
+          })
+          .onEnd(() => {
+            'worklet';
+            runOnJS(setIsDraggingHandle)(false);
+          }),
+      [
+        isTextActive,
+        activeTextSegment,
+        activeTextTrimStart,
+        activeTextTrimEnd,
+        textStartX,
+        isPlaying,
+        setIsDraggingHandle,
+        setIsPlaying,
+        gestureContext,
+        trimTimelineWidth,
+      ]
+    );
+
+    const textRightHandleGestureHandler = useMemo(
+      () =>
+        Gesture.Pan()
+          .enabled(isTextActive && !!activeTextSegment)
+          .onStart(() => {
+            'worklet';
+            textEndX.value = activeTextTrimEnd.value;
+            runOnJS(setIsDraggingHandle)(true);
+            if (isPlaying) runOnJS(setIsPlaying)(false);
+          })
+          .onUpdate((event: any) => {
+            'worklet';
+            const newEnd = Math.min(
+              trimTimelineWidth.value,
+              Math.max(
+                activeTextTrimStart.value + MIN_DURATION_PIXELS,
+                textEndX.value + event.translationX
+              )
+            );
+            activeTextTrimEnd.value = newEnd;
+
+            const timelineW = gestureContext.value.videoDuration
+              ? trimTimelineWidth.value
+              : 1;
+            const newTime =
+              (newEnd / timelineW) * gestureContext.value.videoDuration;
+
+            if (gestureContext.value.activeSegment?.id) {
+              runOnJS(gestureContext.value.updateTextSegmentEnd)(
+                gestureContext.value.activeSegment.id,
+                newTime
+              );
+            }
+          })
+          .onEnd(() => {
+            'worklet';
+            runOnJS(setIsDraggingHandle)(false);
+          }),
+      [
+        isTextActive,
+        activeTextSegment,
+        activeTextTrimStart,
+        activeTextTrimEnd,
+        textEndX,
+        isPlaying,
+        setIsDraggingHandle,
+        setIsPlaying,
+        gestureContext,
+        trimTimelineWidth,
+      ]
     );
 
     const textSegmentActiveContainerStyle = useMemo(
@@ -1095,80 +1210,6 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
 
     const renderTextSegments = () => {
       const hasTextSegments = textSegments.length > 0;
-
-      const textLeftHandleGestureHandler = Gesture.Pan()
-        .enabled(isTextActive && !!activeTextSegment)
-        .onStart(() => {
-          'worklet';
-          textStartX.value = activeTextTrimStart.value;
-          runOnJS(setIsDraggingHandle)(true);
-          if (isPlaying) runOnJS(setIsPlaying)(false);
-        })
-        .onUpdate((event: any) => {
-          'worklet';
-          const newStart = Math.max(
-            0,
-            Math.min(
-              activeTextTrimEnd.value - MIN_DURATION_PIXELS,
-              textStartX.value + event.translationX
-            )
-          );
-          activeTextTrimStart.value = newStart;
-
-          const timelineW = gestureContext.value.videoDuration
-            ? trimTimelineWidth.value
-            : 1;
-          const newTime =
-            (newStart / timelineW) * gestureContext.value.videoDuration;
-
-          if (gestureContext.value.activeSegment?.id) {
-            runOnJS(gestureContext.value.updateTextSegmentStart)(
-              gestureContext.value.activeSegment.id,
-              newTime
-            );
-          }
-        })
-        .onEnd(() => {
-          'worklet';
-          runOnJS(setIsDraggingHandle)(false);
-        });
-
-      const textRightHandleGestureHandler = Gesture.Pan()
-        .enabled(isTextActive && !!activeTextSegment)
-        .onStart(() => {
-          'worklet';
-          textEndX.value = activeTextTrimEnd.value;
-          runOnJS(setIsDraggingHandle)(true);
-          if (isPlaying) runOnJS(setIsPlaying)(false);
-        })
-        .onUpdate((event: any) => {
-          'worklet';
-          const newEnd = Math.min(
-            trimTimelineWidth.value,
-            Math.max(
-              activeTextTrimStart.value + MIN_DURATION_PIXELS,
-              textEndX.value + event.translationX
-            )
-          );
-          activeTextTrimEnd.value = newEnd;
-
-          const timelineW = gestureContext.value.videoDuration
-            ? trimTimelineWidth.value
-            : 1;
-          const newTime =
-            (newEnd / timelineW) * gestureContext.value.videoDuration;
-
-          if (gestureContext.value.activeSegment?.id) {
-            runOnJS(gestureContext.value.updateTextSegmentEnd)(
-              gestureContext.value.activeSegment.id,
-              newTime
-            );
-          }
-        })
-        .onEnd(() => {
-          'worklet';
-          runOnJS(setIsDraggingHandle)(false);
-        });
 
       // Show "Add text" button if no segments exist
       if (!hasTextSegments) {

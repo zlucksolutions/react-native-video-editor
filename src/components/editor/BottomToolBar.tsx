@@ -9,8 +9,12 @@ import { useEditorContext } from '../../context/EditorContext';
 import { useEditorState } from '../../context/EditorStateContext';
 import type { EditorTool } from '../../context/EditorContext';
 import { CAPTION_BG_COLORS, COLORS } from '../../constants/colors';
-// @ts-ignore - Peer dependency
-import { pick, keepLocalCopy, types } from '@react-native-documents/picker';
+import {
+  pick,
+  keepLocalCopy,
+  types,
+  // @ts-ignore - Peer dependency
+} from '@react-native-documents/picker';
 // @ts-ignore - Peer dependency
 import {
   MusicIcon,
@@ -102,20 +106,22 @@ export const BottomToolBar = React.memo(
           allowMultiSelection: false,
         });
 
-        if (pickResult) {
+        const selectedFile = [pickResult]?.[0];
+
+        if (selectedFile) {
           try {
             const [localCopy] = await keepLocalCopy({
               files: [
                 {
-                  uri: pickResult.uri,
-                  fileName: pickResult.name ?? 'audio',
+                  uri: selectedFile.uri,
+                  fileName: selectedFile.name ?? 'audio',
                 },
               ],
               destination: 'cachesDirectory',
             });
 
             const audioUriToUse =
-              localCopy?.localUri || localCopy?.uri || pickResult.uri;
+              localCopy?.localUri || localCopy?.uri || selectedFile.uri;
 
             if (audioUriToUse) {
               setAudioUri(audioUriToUse);
@@ -124,8 +130,8 @@ export const BottomToolBar = React.memo(
             }
           } catch (copyErr: any) {
             console.warn('Failed to create local copy:', copyErr);
-            if (pickResult.uri) {
-              setAudioUri(pickResult.uri);
+            if (selectedFile.uri) {
+              setAudioUri(selectedFile.uri);
               setActiveTool('bgm');
               return;
             }
@@ -136,13 +142,17 @@ export const BottomToolBar = React.memo(
           setIsPlaying(true);
         }
       } catch (err: any) {
-        console.error('Error picking audio:', err);
-        if (err?.code === 'DOCUMENT_PICKER_CANCELED') {
+        // Handle cancellation manually as isCancel might be undefined
+        const isCancelled =
+          err?.code === 'DOCUMENT_PICKER_CANCELED' ||
+          err?.message === 'User canceled document picker';
+
+        if (isCancelled) {
           if (wasPlayingBeforePickerRef.current) {
             setIsPlaying(true);
           }
         } else {
-          console.error('Audio picker error details:', err);
+          // console.error('Audio picker error:', err);
           if (wasPlayingBeforePickerRef.current) {
             setIsPlaying(true);
           }
