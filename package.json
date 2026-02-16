@@ -47,7 +47,15 @@
   "keywords": [
     "react-native",
     "ios",
-    "android"
+    "android",
+    "video-editor",
+    "video-trim",
+    "video-crop",
+    "video-edit",
+    "video-editor-sdk",
+    "video-editor-react-native",
+    "react-native-video-editor",
+    "video-editor-react-native-sdk"
   ],
   "repository": {
     "type": "git",
