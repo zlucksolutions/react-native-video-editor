@@ -153,7 +153,34 @@ cd ios && pod install
 
 ---
 
-### 3. iOS setup
+---
+
+### 3. Permissions setup
+
+#### Android
+
+Add these permissions to your `android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+```
+
+#### iOS
+
+Add these usage descriptions to your `ios/YourProjectName/Info.plist`:
+
+```xml
+<key>NSPhotoLibraryUsageDescription</key>
+<string>We need access to your photo library to select and edit videos</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>We need access to the microphone to record audio for your videos.</string>
+```
+
+---
+
+### 4. iOS setup (CocoaPods)
 
 ```sh
 cd ios
@@ -162,7 +189,7 @@ pod install
 
 ---
 
-### 4. Wrap your app with `GestureHandlerRootView`
+### 5. Wrap your app with `GestureHandlerRootView`
 
 This step is **mandatory**.
 
@@ -180,7 +207,7 @@ export default function App() {
 
 ---
 
-### 5. Enable `react-native-worklets` Babel plugin
+### 6. Enable `react-native-worklets` Babel plugin
 
 Update your `babel.config.js`:
 
