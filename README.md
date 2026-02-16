@@ -1,12 +1,5 @@
 # react-native-video-editor
 
-<p align="center">
-  <img
-    src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=30&pause=1000&color=36BCF7&center=true&vCenter=true&width=700&lines=React+Native+Video+Editor+SDK;Cross-Platform+iOS+%26+Android;Fast+%7C+Native+%7C+Powerful"
-    alt="Typing SVG"
-  />
-</p>
-
 A **UI-based, native video editing SDK** for React Native.
 
 This library provides a ready-to-use video editor UI (similar to social media editors) that allows users to trim, crop, add music, text overlays, and voice-overs — all powered by native iOS and Android implementations.
@@ -14,6 +7,19 @@ This library provides a ready-to-use video editor UI (similar to social media ed
 > **Important:**
 > App developers do **not** need to construct JSON editing configurations.
 > You simply open the editor, enable features via boolean flags, and receive the exported video.
+
+
+---
+
+## SDK Demo
+
+| Trim Video | Crop / Aspect Ratio | Add Music (BGM) |
+| :---: | :---: | :---: |
+| ![Trim](assets/gifs/trim.gif) | ![Crop](assets/gifs/crop.gif) | ![BGM](assets/gifs/bgm.gif) |
+
+| Text Overlays | Voice-over |
+| :---: | :---: |
+| ![Text](assets/gifs/Textoverlay.gif) | ![Voice](assets/gifs/record_voice.gif) |
 
 ---
 
