@@ -16,17 +16,15 @@ This library provides a ready-to-use video editor UI (similar to social media ed
 > You simply open the editor, enable features via boolean flags, and receive the exported video.
 
 
----
-
 ## SDK Demo
 
-| Trim Video | Crop / Aspect Ratio | Add Music (BGM) |
-| :---: | :---: | :---: |
-| ![Trim](assets/gifs/trim.gif) | ![Crop](assets/gifs/crop.gif) | ![BGM](assets/gifs/bgm.gif) |
-
-| Text Overlays | Voice-over |
-| :---: | :---: |
-| ![Text](assets/gifs/textoverlay.gif) | ![Voice](assets/gifs/record_voice.gif) |
+<p align="center">
+  <img src="assets/gifs/trim.gif" width="32%" />
+  <img src="assets/gifs/crop.gif" width="32%" />
+  <img src="assets/gifs/bgm.gif" width="32%" />
+  <img src="assets/gifs/textoverlay.gif" width="32%" />
+  <img src="assets/gifs/record_voice.gif" width="32%" />
+</p>
 
 ---
 
