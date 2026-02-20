@@ -1,0 +1,21 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "assets/fonts/ArchivoBlack-Regular.ttf",
+      "sha1": "5b6c44432da2e1330ad30153eddf98c739013b88"
+    },
+    {
+      "path": "assets/fonts/AlfaSlabOne-Regular.ttf",
+      "sha1": "3379279f774fdb42b7e4bb027efb64337d791f1c"
+    },
+    {
+      "path": "assets/fonts/Ramsina-Regular.ttf",
+      "sha1": "05cb034d9e2bf8a0ed8373c8bcf258985a44a969"
+    },
+    {
+      "path": "assets/fonts/Betania-Regular.ttf",
+      "sha1": "a32844d650a730f329405f7e2f5c60ca052a7d4d"
+    }
+  ]
+}
