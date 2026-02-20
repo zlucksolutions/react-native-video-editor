@@ -272,6 +272,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
       fontSize,
       color: textColor,
       backgroundColor,
+      fontFamily,
       x: defaultX,
       y: defaultY,
     };

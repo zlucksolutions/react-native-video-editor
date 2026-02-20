@@ -203,6 +203,7 @@ export const DraggableText: React.FC<DraggableTextProps> = ({
   const elementWidth = useSharedValue(0);
   const elementHeight = useSharedValue(0);
 
+  const customFontWeight = element?.fontFamily ? 'normal' : 'bold';
   const animatedStyle = useAnimatedStyle(() => {
     // Scale factor based on layout animation (0 = full size, 1 = small size)
     const s = previewScale.value;
@@ -319,6 +320,7 @@ export const DraggableText: React.FC<DraggableTextProps> = ({
                 color: element.color,
                 backgroundColor: element.backgroundColor || 'transparent',
                 fontFamily: element.fontFamily,
+                fontWeight: customFontWeight,
               },
               animatedTextStyle,
             ]}
@@ -339,7 +341,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   textElement: {
-    fontWeight: 'bold',
     textAlign: 'center',
     paddingVertical: 5,
     paddingHorizontal: 9,

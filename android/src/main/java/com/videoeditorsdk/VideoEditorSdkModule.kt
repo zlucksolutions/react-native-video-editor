@@ -360,20 +360,38 @@ class VideoProcessingModule(private val reactContext: ReactApplicationContext) :
         }
     }
 
+    private fun calculateOptimalBitrate(width: Int, height: Int): Int {
+        val pixels = width * height
+        return when {
+            pixels < 720 * 480 -> 2_500_000 // SD
+            pixels < 1280 * 720 -> 5_000_000 // HD
+            pixels < 1920 * 1080 -> 10_000_000 // Full HD
+            pixels < 3840 * 2160 -> 20_000_000 // 4K
+            else -> 30_000_000
+        }
+    }
+
     private fun getOriginalBitrate(videoUri: String): Int {
         val retriever = MediaMetadataRetriever()
         try {
             retriever.setDataSource(reactContext, videoUri.toUri())
-            val bitrate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
-            val originalBitrate = bitrate?.toInt() ?: 3_000_000
+            val bitrateStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
+            val originalBitrate = bitrateStr?.toInt() ?: 0
 
-            val targetBitrate = (originalBitrate * 0.9).toInt()
+            // If original bitrate is missing, use resolution-based optimal
+            if (originalBitrate <= 0) {
+                val width = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toInt() ?: 0
+                val height = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toInt() ?: 0
+                val optimal = calculateOptimalBitrate(width, height)
+                Log.d("VideoProcessing", "Bitrate unknown, using fallback optimal: $optimal")
+                return optimal
+            }
 
-            Log.d("VideoProcessing", "Original bitrate: $originalBitrate, Target bitrate: $targetBitrate")
-            return targetBitrate
+            Log.d("VideoProcessing", "Original bitrate: $originalBitrate")
+            return originalBitrate
         } catch (e: Exception) {
-            Log.e("VideoProcessing", "Failed to get bitrate, using default", e)
-            return 3_000_000 // Default fallback
+            Log.e("VideoProcessing", "Failed to get bitrate, using generic fallback", e)
+            return 5_000_000 // 5 Mbps fallback
         } finally {
             retriever.release()
         }
@@ -398,7 +416,7 @@ class VideoProcessingModule(private val reactContext: ReactApplicationContext) :
                     )
                     .setRequestedAudioEncoderSettings(
                         AudioEncoderSettings.Builder()
-                            .setBitrate(128_000) // 128 kbps for audio
+                            .setBitrate(256_000) // 256 kbps for audio
                             .build()
                     )
                     .build()
@@ -755,6 +773,7 @@ class VideoProcessingModule(private val reactContext: ReactApplicationContext) :
 
                     val overlayObj = JSONObject().apply {
                         put("text", text)
+                        put("fontFamily", element.optString("fontFamily", null))
                         put("startTimeMs", element.getDouble("startTime") * 1000)
                         put("endTimeMs", element.getDouble("endTime") * 1000)
                         put("fontSize", element.optDouble("fontSize", 24.0))
@@ -1246,6 +1265,7 @@ class VideoProcessingModule(private val reactContext: ReactApplicationContext) :
 
                     val timedOverlay = TimedBitmapOverlay(
                         text = text,
+                        fontFamily = if (overlay.hasKey("fontFamily")) overlay.getString("fontFamily") else null,
                         startTimeMs = startTimeMs,
                         endTimeMs = endTimeMs,
                         xPos = androidX,
@@ -1651,8 +1671,9 @@ class VideoProcessingModule(private val reactContext: ReactApplicationContext) :
     }
 
     @SuppressLint("NewApi")
-    private data class TimedBitmapOverlay(
+    private inner class TimedBitmapOverlay(
         val text: String,
+        val fontFamily: String?,
         val startTimeMs: Long,
         val endTimeMs: Long,
         val xPos: Float,
@@ -1673,7 +1694,24 @@ class VideoProcessingModule(private val reactContext: ReactApplicationContext) :
                     Color.WHITE
                 }
                 textSize = targetTextPx
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+
+                val fontTypeface = if (!fontFamily.isNullOrEmpty()) {
+                    try {
+                        // In React Native, custom fonts are often in assets/fonts/
+                        Typeface.createFromAsset(reactContext.assets, "fonts/$fontFamily.ttf")
+                    } catch (e: Exception) {
+                        try {
+                            // Try loading by name directly (system fonts or pre-registered)
+                            Typeface.create(fontFamily, Typeface.BOLD)
+                        } catch (e2: Exception) {
+                            Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                        }
+                    }
+                } else {
+                    Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                }
+
+                typeface = fontTypeface
                 textAlign = Paint.Align.LEFT
             }
 
