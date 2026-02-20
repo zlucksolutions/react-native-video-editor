@@ -276,6 +276,50 @@ const result = await openVideoEditor({
 ```
 
 ---
+## Custom Font Support
+
+To use custom fonts for text overlays, follow the steps below.
+
+### Step 1: Download the Font
+
+Visit [Google Fonts](https://fonts.google.com/), choose your desired font, and download the zip file.
+
+### Step 2: Add Fonts to Your Project
+
+Create a `fonts` folder in your project (recommended path: `src/assets/fonts/`) and place your `.ttf` files inside it.
+
+### Step 3: Add Config File
+
+Create a `react-native.config.js` file at the root of your project and add:
+```js
+module.exports = {
+  project: {
+    ios: {},
+    android: {},
+  },
+  assets: ['./src/assets/fonts'], // adjust path if needed
+};
+```
+
+### Step 4: Link the Fonts
+
+Run the following command at the root of your project:
+```bash
+npx react-native-asset
+```
+
+This will automatically copy the fonts into the correct native folders for both iOS and Android.
+
+### Step 5: Use the Font
+
+Pass the font filename (without extension) as the `fontFamily` prop:
+```jsx
+openVideoEditor({
+  source: videoUri,
+  fontFamily: 'LobsterRegular', // filename without .ttf
+});
+```
+---
 
 ## Minimal Example
 
