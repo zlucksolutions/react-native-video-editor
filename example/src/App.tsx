@@ -6,34 +6,24 @@ import Video from 'react-native-video';
 import { pick, types } from '@react-native-documents/picker';
 
 export default function App() {
-  // State to store the selected video URI
   const [selectedVideoUri, setSelectedVideoUri] = useState<string | null>(null);
-  // State to store the exported video URI
   const [exportedVideoUri, setExportedVideoUri] = useState<string | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   // Function to pick video from device
   const pickVideo = async () => {
     try {
-      const result = await pick({
-        type: [types.video],
-        mode: 'open',
-      });
-
+      const result = await pick({ type: [types.video], mode: 'open' });
       if (result && result.length > 0) {
-        const pickedFile = result[0];
-        const videoUri = pickedFile.uri;
-
+        const videoUri = result[0]!.uri;
         setSelectedVideoUri(videoUri);
 
         // Immediately open editor with selected video
         openEditorWithVideo(videoUri);
       }
     } catch (err: any) {
-      // Check if user cancelled
-      if (err?.message === 'User canceled document picker') {
-      } else {
-        Alert.alert('Cancel', 'User cancelled video selection');
+      if (err?.message !== 'User canceled document picker') {
+        Alert.alert('Cancelled', 'User cancelled video selection');
       }
     }
   };
@@ -48,6 +38,7 @@ export default function App() {
         editBGM: true,
         editTextOverlay: true,
         editVoiceOver: true,
+        fontFamily: 'Ramsina-Regular',
       });
 
       // Check if editing was successful
@@ -58,22 +49,22 @@ export default function App() {
         // Show success alert with the URI
         Alert.alert(
           'Video Exported Successfully!',
-          `Video saved at:\n${result.exportedUri}`,
+          `Saved at:\n${result.exportedUri}`,
           [{ text: 'OK' }]
         );
 
         // Open the modal to play the video
         setIsModalVisible(true);
       } else if (!result.success) {
-        Alert.alert('Cancel', 'User cancelled video editor');
+        Alert.alert('Cancelled', 'User cancelled video editor');
       }
     } catch (e: any) {
-      Alert.alert('Error', 'Failed to open video editor', e.message || e);
+      Alert.alert('Error', e.message || 'Failed to open video editor');
     }
   };
 
   return (
-    <GestureHandlerRootView>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
         <Text style={styles.appTitle}>Video Editor App</Text>
 
@@ -236,7 +227,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    paddingTop: 50, // Safe area for notch
+    paddingTop: 50,
     backgroundColor: '#111',
   },
   modalTitle: {
