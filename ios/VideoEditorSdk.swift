@@ -5,6 +5,84 @@ import React
 import UIKit
 import UniformTypeIdentifiers
 
+// MARK: - Error & Logging
+enum VideoEditingError: Error {
+  case invalidJSON
+  case invalidURL
+  case invalidVideoTrack
+  case invalidRange
+  case readerFailed(String)
+  case writerFailed(String)
+  case exportFailed(String)
+  case missingParameter(String)
+}
+
+private func makeNSError(_ error: VideoEditingError, underlying: Error? = nil) -> NSError {
+  let domain = "VideoEditing"
+  let (code, message): (Int, String) = {
+    switch error {
+    case .invalidJSON: return (1001, "Invalid JSON configuration")
+    case .invalidURL: return (1002, "Invalid URL")
+    case .invalidVideoTrack: return (1003, "Invalid or missing video track")
+    case .invalidRange: return (1004, "Invalid time range")
+    case .readerFailed(let msg): return (1005, "Reader failed: \(msg)")
+    case .writerFailed(let msg): return (1006, "Writer failed: \(msg)")
+    case .exportFailed(let msg): return (1007, "Export failed: \(msg)")
+    case .missingParameter(let name): return (1008, "Missing parameter: \(name)")
+    }
+  }()
+
+  var userInfo: [String: Any] = [NSLocalizedDescriptionKey: message]
+  if let underlying = underlying {
+    userInfo[NSUnderlyingErrorKey] = underlying
+  }
+  return NSError(domain: domain, code: code, userInfo: userInfo)
+}
+
+private func logEvent(_ name: String, _ fields: [String: Any]) {
+  var payload = fields
+  payload["event"] = name
+  if let data = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted]),
+     let string = String(data: data, encoding: .utf8) {
+    print("📋 \(string)")
+  } else {
+    print("📋 \(name): \(fields)")
+  }
+}
+
+// MARK: - Time helpers
+private let kPreferredTimescale: CMTimeScale = 600
+
+@inline(__always)
+private func secondsToCMTime(_ seconds: Double) -> CMTime {
+  let clamped = max(seconds, 0)
+  return CMTime(seconds: clamped, preferredTimescale: kPreferredTimescale)
+}
+
+@inline(__always)
+private func msToCMTime(_ milliseconds: Double) -> CMTime {
+  return secondsToCMTime(milliseconds / 1000.0)
+}
+
+private func clampTimeRange(
+  start: Double,
+  end: Double,
+  durationSeconds: Double
+) -> (start: Double, end: Double)? {
+  guard durationSeconds > 0 else { return nil }
+  let clampedStart = max(0, min(start, durationSeconds))
+  let clampedEnd = max(clampedStart, min(end, durationSeconds))
+  guard clampedEnd > clampedStart else { return nil }
+  return (clampedStart, clampedEnd)
+}
+
+private func estimatedVideoBitrate(for asset: AVAsset) -> Double? {
+  guard let rate = asset.tracks(withMediaType: .video).first?.estimatedDataRate else {
+    return nil
+  }
+  return Double(rate)
+}
+
 // MARK: - Video Editing Configuration Models
 struct VideoEditingConfig: Codable {
   let videoElements: [VideoElement]
@@ -31,6 +109,7 @@ struct VideoElement: Codable {
   // Text overlay parameters
   let text: String?
   let fontSize: Double?
+  let fontFamily: String?
   let textColor: String?
   let textOverlayColor: String?
   let textPosition: TextPosition?
@@ -68,8 +147,11 @@ struct VideoInfo {
 
 // Add after VideoInfo struct
 struct VideoQualitySettings {
-  static func getHighQualityVideoSettings(for renderSize: CGSize) -> [String: Any] {
-    let bitrate = calculateOptimalBitrate(for: renderSize)
+  static func videoSettings(for renderSize: CGSize, sourceBitrate: Double? = nil) -> [String: Any] {
+    let optimal = Double(calculateOptimalBitrate(for: renderSize))
+    // Use source bitrate if available (preserves original quality); fall back to resolution-based optimal
+    let target = sourceBitrate ?? optimal
+    let bitrate = Int(max(500_000, target))
 
     return [
       AVVideoCodecKey: AVVideoCodecType.h264,
@@ -77,40 +159,44 @@ struct VideoQualitySettings {
       AVVideoHeightKey: Int(renderSize.height),
       AVVideoCompressionPropertiesKey: [
         AVVideoAverageBitRateKey: bitrate,
-//        AVVideoMaxKeyFrameIntervalKey: 30,
         AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
-//        AVVideoH264EntropyModeKey: AVVideoH264EntropyModeCABAC,
-//        AVVideoQualityKey: 0.65,  // Near maximum quality
-//        AVVideoAllowFrameReorderingKey: true,
-//        AVVideoExpectedSourceFrameRateKey: 30,
+        AVVideoMaxKeyFrameIntervalKey: 30,
       ],
     ]
   }
 
-  static func getHighQualityAudioSettings() -> [String: Any] {
+  static func audioSettings() -> [String: Any] {
     return [
       AVFormatIDKey: kAudioFormatMPEG4AAC,
       AVSampleRateKey: 44100,
       AVNumberOfChannelsKey: 2,
-      AVEncoderBitRateKey: 128_000,  // High quality audio 256_000
+      AVEncoderBitRateKey: 256_000,
       AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
     ]
   }
 
-  private static func calculateOptimalBitrate(for size: CGSize) -> Int {
+  static func nominalFrameDuration(for track: AVAssetTrack) -> CMTime {
+    let fps = track.nominalFrameRate
+    let validFps = (fps.isNaN || fps <= 0) ? 30.0 : fps
+    // Round to nearest common frame rate to avoid floating-point drift
+    let rounded = (validFps * 100).rounded() / 100
+    return CMTimeMake(value: 1, timescale: CMTimeScale(rounded))
+  }
+
+  static func calculateOptimalBitrate(for size: CGSize) -> Int {
     let pixels = size.width * size.height
 
     switch pixels {
     case 0..<(720 * 480):  // SD
-      return 1_500_000  // 1.5 Mbps
+      return 2_500_000  // 2.5 Mbps
     case (720 * 480)..<(1280 * 720):  // HD
-      return 3_000_000  // 3 Mbps
-    case (1280 * 720)..<(1920 * 1080):  // Full HD
       return 5_000_000  // 5 Mbps
-    case (1920 * 1080)..<(3840 * 2160):  // 4K
+    case (1280 * 720)..<(1920 * 1080):  // Full HD
       return 10_000_000  // 10 Mbps
+    case (1920 * 1080)..<(3840 * 2160):  // 4K
+      return 20_000_000  // 20 Mbps
     default:  // Higher than 4K
-      return 15_000_000  // 15 Mbps
+      return 30_000_000  // 30 Mbps
     }
   }
 }
@@ -151,6 +237,9 @@ class VideoEditorSdk: NSObject {
   private var originalVideoUri: String?
   private var isVisionCameraVideo: Bool = false
   private var hasAppliedManualTransform: Bool = false
+  /// Bitrate of the original imported video, captured once before any processing begins.
+  /// Passed through every export step so intermediate re-encodes never degrade quality.
+  private var originalVideoBitrate: Double?
 
   private func getOriginalVideoPath() -> String? {
     return originalVideoUri
@@ -257,6 +346,7 @@ class VideoEditorSdk: NSObject {
     videoComposition: AVMutableVideoComposition?,
     audioMix: AVMutableAudioMix? = nil,
     outputURL: URL,
+    sourceBitrate: Double? = nil,
     completion: @escaping (Result<URL, Error>) -> Void
   ) {
     if FileManager.default.fileExists(atPath: outputURL.path) {
@@ -264,26 +354,16 @@ class VideoEditorSdk: NSObject {
     }
 
     guard let videoTrack = asset.tracks(withMediaType: .video).first else {
-      completion(.failure(NSError(domain: "VideoEditing", code: -1, userInfo: [NSLocalizedDescriptionKey: "No video track found"])))
+      completion(.failure(makeNSError(.invalidVideoTrack)))
       return
     }
 
     let naturalSize = videoTrack.naturalSize
     let renderSize = videoComposition?.renderSize ?? naturalSize
-    let width = min(renderSize.width, 1080)
-    let height = min(renderSize.height, 1920)
-
-    let pixels = width * height
-    let targetBitrate: Int
-    switch pixels {
-    case 0..<(1280*720): targetBitrate = 3_000_000
-    case (1280*720)..<(1920*1080): targetBitrate = 5_000_000
-    default: targetBitrate = 8_000_000
-    }
 
     // Setup reader
     guard let reader = try? AVAssetReader(asset: asset) else {
-      completion(.failure(NSError(domain: "VideoEditing", code: -2, userInfo: [NSLocalizedDescriptionKey: "Failed to create reader"])))
+      completion(.failure(makeNSError(.readerFailed("Failed to create reader"))))
       return
     }
 
@@ -295,7 +375,7 @@ class VideoEditorSdk: NSObject {
     readerVideoOutput.alwaysCopiesSampleData = false
 
     guard reader.canAdd(readerVideoOutput) else {
-      completion(.failure(NSError(domain: "VideoEditing", code: -2, userInfo: [NSLocalizedDescriptionKey: "Cannot add video output"])))
+      completion(.failure(makeNSError(.readerFailed("Cannot add video output"))))
       return
     }
     reader.add(readerVideoOutput)
@@ -320,20 +400,11 @@ class VideoEditorSdk: NSObject {
 
     // Setup writer
     guard let writer = try? AVAssetWriter(outputURL: outputURL, fileType: .mp4) else {
-      completion(.failure(NSError(domain: "VideoEditing", code: -3, userInfo: [NSLocalizedDescriptionKey: "Failed to create writer"])))
+      completion(.failure(makeNSError(.writerFailed("Failed to create writer"))))
       return
     }
 
-    let videoSettings: [String: Any] = [
-      AVVideoCodecKey: AVVideoCodecType.h264,
-      AVVideoWidthKey: Int(width),
-      AVVideoHeightKey: Int(height),
-      AVVideoCompressionPropertiesKey: [
-        AVVideoAverageBitRateKey: targetBitrate,
-        AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
-        AVVideoMaxKeyFrameIntervalKey: 30,
-      ]
-    ]
+    let videoSettings = VideoQualitySettings.videoSettings(for: renderSize, sourceBitrate: sourceBitrate)
 
     let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
     videoInput.expectsMediaDataInRealTime = false
@@ -341,12 +412,7 @@ class VideoEditorSdk: NSObject {
 
     var audioInput: AVAssetWriterInput?
     if readerAudioOutput != nil {
-      let audioSettings: [String: Any] = [
-        AVFormatIDKey: kAudioFormatMPEG4AAC,
-        AVSampleRateKey: 44100,
-        AVNumberOfChannelsKey: 2,
-        AVEncoderBitRateKey: 128_000
-      ]
+      let audioSettings = VideoQualitySettings.audioSettings()
       audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: audioSettings)
       audioInput!.expectsMediaDataInRealTime = false
       writer.add(audioInput!)
@@ -413,9 +479,16 @@ class VideoEditorSdk: NSObject {
     group.notify(queue: .main) {
       writer.finishWriting {
         if writer.status == .completed {
+          logEvent("export_completed", [
+            "output": outputURL.absoluteString,
+            "bitrate": VideoQualitySettings.calculateOptimalBitrate(for: renderSize),
+            "renderWidth": renderSize.width,
+            "renderHeight": renderSize.height,
+            "sourceBitrate": sourceBitrate ?? -1
+          ])
           completion(.success(outputURL))
         } else {
-          completion(.failure(writer.error ?? NSError(domain: "VideoEditing", code: -4, userInfo: [NSLocalizedDescriptionKey: "Export failed"])))
+          completion(.failure(makeNSError(.writerFailed(writer.error?.localizedDescription ?? "Export failed"), underlying: writer.error)))
         }
       }
     }
@@ -429,8 +502,12 @@ class VideoEditorSdk: NSObject {
   ) -> AVAssetExportSession? {
 
     let assetToExport = composition ?? asset
-    guard let exportSession = AVAssetExportSession(asset: assetToExport, presetName: AVAssetExportPresetHEVCHighestQuality)
-    else { return nil }
+    // Prefer HEVC when supported, fall back to HighestQuality
+    let preset = AVAssetExportSession.allExportPresets().contains(AVAssetExportPresetHEVCHighestQuality)
+      ? AVAssetExportPresetHEVCHighestQuality
+      : AVAssetExportPresetHighestQuality
+
+    guard let exportSession = AVAssetExportSession(asset: assetToExport, presetName: preset) else { return nil }
 
     exportSession.outputURL = outputURL
     exportSession.videoComposition = videoComposition
@@ -474,20 +551,20 @@ class VideoEditorSdk: NSObject {
     reject: @escaping RCTPromiseRejectBlock
   ) {
     print("🎬 [VideoEditing] Starting comprehensive video processing")
-    // print("📄 [VideoEditing] Config JSON: \(editingConfigJson)")
 
     hasAppliedManualTransform = false
     guard let jsonData = try? JSONSerialization.data(withJSONObject: editingConfigJson, options: []) else {
       hasAppliedManualTransform = false
-      reject("E_INVALID_JSON", "Failed to convert config to JSON", nil)
+      let err = makeNSError(.invalidJSON)
+      reject("E_INVALID_JSON", err.localizedDescription, err)
       return
     }
-    print("📄 [VideoEditing] Config JSON: \(editingConfigJson)")
     let config: VideoEditingConfig
     do {
       config = try JSONDecoder().decode(VideoEditingConfig.self, from: jsonData)
     } catch {
-      reject("E_JSON_DECODE", "Failed to decode JSON: \(error)", error)
+      let err = makeNSError(.invalidJSON, underlying: error)
+      reject("E_JSON_DECODE", err.localizedDescription, err)
       return
     }
 
@@ -498,14 +575,16 @@ class VideoEditorSdk: NSObject {
       let sourceVideoUri = sourceVideoElement.uri
     else {
       hasAppliedManualTransform = false
-      reject("E_NO_SOURCE_VIDEO", "No source video URI found in configuration", nil)
+      let err = makeNSError(.missingParameter("videoUri"))
+      reject("E_NO_SOURCE_VIDEO", err.localizedDescription, err)
       return
     }
 
     setOriginalVideoPath(sourceVideoUri)
 
     guard let videoURL = URL(string: sourceVideoUri) else {
-      reject("E_INVALID_URL", "Invalid source video URL", nil)
+      let err = makeNSError(.invalidURL)
+      reject("E_INVALID_URL", err.localizedDescription, err)
       return
     }
 
@@ -513,13 +592,20 @@ class VideoEditorSdk: NSObject {
 
     guard validateVideoTrack(asset) else {
       hasAppliedManualTransform = false
-      reject("E_INVALID_VIDEO", "Video track is invalid or corrupted", nil)
+      let err = makeNSError(.invalidVideoTrack)
+      reject("E_INVALID_VIDEO", err.localizedDescription, err)
       return
     }
 
     let operations = config.videoElements.filter { $0.type != "videoUri" }
 
-    print("🔧 [VideoEditing] Found \(operations.count) operations to process")
+    // Capture the original video's bitrate ONCE before any processing.
+    // This value is passed through every export step so intermediate
+    // re-encodes never degrade the bitrate.
+    self.originalVideoBitrate = estimatedVideoBitrate(for: asset)
+    print("� [VideoEditing] Original video bitrate: \(self.originalVideoBitrate ?? -1) bps")
+
+    print("�🔧 [VideoEditing] Found \(operations.count) operations to process")
 
     let currentVideoUri = sourceVideoUri
     let shouldMuteVideo = sourceVideoElement.muted ?? false
@@ -618,7 +704,12 @@ class VideoEditorSdk: NSObject {
       ) { [weak self] result in
         switch result {
         case .success(let trimmedUri):
-          print("✅ [VideoEditing] Trim completed: \(trimmedUri)")
+          logEvent("trim_complete", [
+            "input": currentVideoUri,
+            "output": trimmedUri,
+            "start": trim.startTime ?? 0,
+            "end": trim.endTime ?? 0
+          ])
           currentVideoUri = trimmedUri
           self?.processCropAndRemainingOperations(
             videoUri: currentVideoUri,
@@ -629,7 +720,8 @@ class VideoEditorSdk: NSObject {
           )
         case .failure(let error):
           self?.hasAppliedManualTransform = false
-          reject("E_TRIM_FAILED", "Trim operation failed: \(error.localizedDescription)", error)
+          let err = error as NSError
+          reject("E_TRIM_FAILED", err.localizedDescription, err)
         }
       }
     } else {
@@ -657,7 +749,11 @@ class VideoEditorSdk: NSObject {
       applyCropOperation(videoUri: currentVideoUri, operation: crop) { [weak self] result in
         switch result {
         case .success(let croppedUri):
-          print("VideoEditing: Crop completed - \(croppedUri)")
+          logEvent("crop_complete", [
+            "input": currentVideoUri,
+            "output": croppedUri,
+            "ratio": crop.selection_params ?? "original"
+          ])
           currentVideoUri = croppedUri
           self?.processRemainingOperations(
             videoUri: currentVideoUri,
@@ -667,7 +763,8 @@ class VideoEditorSdk: NSObject {
           )
         case .failure(let error):
           self?.hasAppliedManualTransform = false
-          reject("ECROPFAILED", "Crop operation failed: \(error.localizedDescription)", error)
+          let err = error as NSError
+          reject("ECROPFAILED", err.localizedDescription, err)
         }
       }
     } else {
@@ -711,7 +808,11 @@ class VideoEditorSdk: NSObject {
         applyCropOperation(videoUri: currentVideoUri, operation: operation) { result in
           switch result {
           case .success(let newVideoUri):
-            print("💾 [File Generated] Crop complete. New file: \(newVideoUri)")
+            logEvent("crop_complete", [
+              "input": currentVideoUri,
+              "output": newVideoUri,
+              "ratio": operation.selection_params ?? "original"
+            ])
             currentVideoUri = newVideoUri
             print("✅ [VideoEditing] Operation \(currentIndex)/\(totalOperations) completed")
             processNext(operationIndex: currentIndex)
@@ -725,7 +826,15 @@ class VideoEditorSdk: NSObject {
         applyBGMOperation(videoUri: currentVideoUri, operation: operation) { result in
           switch result {
           case .success(let newVideoUri):
-            print("💾 [File Generated] AddBGM complete. New file: \(newVideoUri)")
+            logEvent("bgm_complete", [
+              "input": currentVideoUri,
+              "output": newVideoUri,
+              "musicUri": operation.musicUri ?? "",
+              "start": operation.startTime ?? 0,
+              "end": operation.endTime ?? 0,
+              "audioOffset": operation.audioOffset ?? 0,
+              "isLooped": operation.isLooped ?? false
+            ])
             currentVideoUri = newVideoUri
             print("✅ [VideoEditing] Operation \(currentIndex)/\(totalOperations) completed")
             processNext(operationIndex: currentIndex)
@@ -744,7 +853,11 @@ class VideoEditorSdk: NSObject {
         applyTextOverlayOperations(videoUri: currentVideoUri, operations: textOverlays) { result in
           switch result {
           case .success(let newVideoUri):
-            print("💾 [File Generated] AddTextOverlay complete. New file: \(newVideoUri)")
+            logEvent("text_overlay_complete", [
+              "input": currentVideoUri,
+              "output": newVideoUri,
+              "count": textOverlays.count
+            ])
             currentVideoUri = newVideoUri
             print("✅ [VideoEditing] Operation \(currentIndex)/\(totalOperations) completed")
             processNext(operationIndex: currentIndex)
@@ -768,7 +881,11 @@ class VideoEditorSdk: NSObject {
         applyVoiceOverOperation(videoUri: currentVideoUri, operations: voiceOverOps) { result in
           switch result {
           case .success(let newVideoUri):
-            print("💾 [File Generated] AddVoiceOver complete. New file: \(newVideoUri)")
+            logEvent("voiceover_complete", [
+              "input": currentVideoUri,
+              "output": newVideoUri,
+              "count": voiceOverOps.count
+            ])
             currentVideoUri = newVideoUri
             print("✅ [VideoEditing] Operation \(currentIndex)/\(totalOperations) completed")
             processNext(operationIndex: currentIndex)
@@ -814,7 +931,7 @@ class VideoEditorSdk: NSObject {
     }
   }
 
-  // MARK: - Individual Operation Methods
+  // MARK:Trim Operation
   private func applyTrimOperation(
     videoUri: String,
     operation: VideoElement,
@@ -835,6 +952,11 @@ class VideoEditorSdk: NSObject {
     }
 
     let asset = AVAsset(url: videoURL)
+    let durationSeconds = CMTimeGetSeconds(asset.duration)
+    guard let clamped = clampTimeRange(start: startTime, end: endTime, durationSeconds: durationSeconds) else {
+      completion(.failure(NSError(domain: "VideoEditing", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid trim range"])))
+      return
+    }
     guard validateVideoTrack(asset) else {
       completion(.failure(NSError(domain: "VideoEditing", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid video track"])))
       return
@@ -842,8 +964,8 @@ class VideoEditorSdk: NSObject {
 
     trimVideoToTemp(
       videoUri,
-      startTime: startTime * 1000.0,
-      endTime: endTime * 1000.0,
+      startTime: clamped.start * 1000.0,
+      endTime: clamped.end * 1000.0,
       tempFileName: tempFileName,
       resolve: { result in
         if let uri = result as? String {
@@ -856,6 +978,7 @@ class VideoEditorSdk: NSObject {
     )
   }
 
+  // MARK: Crop Operation
   private func applyCropOperation(
     videoUri: String,
     operation: VideoElement,
@@ -885,14 +1008,13 @@ class VideoEditorSdk: NSObject {
     )
   }
 
+  // MARK: BGM Operation
   private func applyBGMOperation(
     videoUri: String,
     operation: VideoElement,
     completion: @escaping (Result<String, Error>) -> Void
   ) {
     guard let musicUri = operation.musicUri,
-//      let startTime = operation.startTime,
-//      let endTime = operation.endTime,
       let audioOffset = operation.audioOffset
     else {
       completion(.failure(NSError(domain: "VideoEditing", code: 400, userInfo: [NSLocalizedDescriptionKey: "Missing BGM parameters"])))
@@ -902,8 +1024,12 @@ class VideoEditorSdk: NSObject {
     let asset = AVAsset(url: URL(string: videoUri)!)
     let videoDurationSeconds = CMTimeGetSeconds(asset.duration)
 
-    let startTime = 0.0
-    let endTime = videoDurationSeconds
+    let startTime = max(0.0, operation.startTime ?? 0.0)
+    let requestedEnd = operation.endTime ?? videoDurationSeconds
+    guard let clamped = clampTimeRange(start: startTime, end: requestedEnd, durationSeconds: videoDurationSeconds) else {
+      completion(.failure(NSError(domain: "VideoEditing", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid BGM time range"])))
+      return
+    }
 
     let tempFileName = generateTempFileName()
     let isLooped = operation.isLooped ?? false
@@ -911,8 +1037,8 @@ class VideoEditorSdk: NSObject {
     addTrimmedAudioToTemp(
       videoUri,
       audioPath: musicUri,
-      startTime: startTime * 1000.0,
-      endTime: endTime * 1000.0,
+      startTime: clamped.start * 1000.0,
+      endTime: clamped.end * 1000.0,
       audioOffset: audioOffset * 1000.0,
       tempFileName: tempFileName,
       isLooped: isLooped,
@@ -927,6 +1053,7 @@ class VideoEditorSdk: NSObject {
     )
   }
 
+  // MARK: Text Overlay
   private func applyTextOverlayOperations(
     videoUri: String,
     operations: [VideoElement],
@@ -966,6 +1093,7 @@ class VideoEditorSdk: NSObject {
       let overlay: NSDictionary = [
         "text": text,
         "fontSize": fontSize,
+        "fontFamily": operation.fontFamily ?? "",
         "color": textColor,
         "overlayColor": operation.textOverlayColor ?? "#00000000",
         "xNormalized": clampedX,
@@ -1037,6 +1165,7 @@ class VideoEditorSdk: NSObject {
   //   }
   // }
 
+  // MARK: Voice Over
   private func applyVoiceOverOperation(
     videoUri: String,
     operations: [VideoElement],
@@ -1049,6 +1178,7 @@ class VideoEditorSdk: NSObject {
     }
 
     let videoAsset = AVAsset(url: videoURL)
+    let videoDurationSeconds = CMTimeGetSeconds(videoAsset.duration)
     let composition = AVMutableComposition()
 
     guard let videoTrack = videoAsset.tracks(withMediaType: .video).first,
@@ -1093,7 +1223,7 @@ class VideoEditorSdk: NSObject {
         continue
       }
 
-      guard startTime < endTime else {
+      guard let clamped = clampTimeRange(start: startTime, end: endTime, durationSeconds: videoDurationSeconds) else {
         print("⚠️ Skipping voice over with invalid start/end times at index \(index)")
         continue
       }
@@ -1111,9 +1241,12 @@ class VideoEditorSdk: NSObject {
         continue
       }
 
-      let durationInSeconds = endTime - startTime
-      let timeRangeToInsert = CMTimeRange(start: .zero, duration: CMTime(seconds: durationInSeconds, preferredTimescale: 600))
-      let insertAtTime = CMTime(seconds: startTime, preferredTimescale: 600)
+      let durationInSeconds = clamped.end - clamped.start
+      let timeRangeToInsert = CMTimeRange(
+        start: .zero,
+        duration: secondsToCMTime(durationInSeconds)
+      )
+      let insertAtTime = secondsToCMTime(clamped.start)
 
       do {
         try compositionVoiceOverTrack.insertTimeRange(
@@ -1227,6 +1360,8 @@ class VideoEditorSdk: NSObject {
       return
     }
 
+    let sourceBitrate = self.originalVideoBitrate
+
     // 5. Export the final composed video (no changes needed here)
     let tempFileName = generateTempFileName()
     let outputURL = getTempDirectory().appendingPathComponent(tempFileName)
@@ -1244,7 +1379,8 @@ class VideoEditorSdk: NSObject {
       asset: composition,
       videoComposition: videoComposition,
       audioMix: audioMix,
-      outputURL: outputURL
+      outputURL: outputURL,
+      sourceBitrate: sourceBitrate
     ) { result in
       switch result {
       case .success(let url):
@@ -1255,6 +1391,7 @@ class VideoEditorSdk: NSObject {
     }
   }
 
+  // MARK: Vision Camera
   private func isVisionCameraVideoDetected(_ asset: AVAsset, explicitFlag: Bool) -> Bool {
     if explicitFlag {
       return true
@@ -1334,7 +1471,7 @@ class VideoEditorSdk: NSObject {
 
     let videoComposition = AVMutableVideoComposition()
     videoComposition.renderSize = renderSize
-    videoComposition.frameDuration = CMTime(value: 1, timescale: 30)
+    videoComposition.frameDuration = VideoQualitySettings.nominalFrameDuration(for: videoTrack)
 
     let instruction = AVMutableVideoCompositionInstruction()
     instruction.timeRange = CMTimeRange(start: .zero, duration: composition.duration)
@@ -1358,13 +1495,14 @@ class VideoEditorSdk: NSObject {
     reject: @escaping RCTPromiseRejectBlock
   ) {
     guard let inputURL = URL(string: videoPath) else {
-      reject("E_INVALID_URL", "Invalid video URL", nil)
+      let err = makeNSError(.invalidURL)
+      reject("E_INVALID_URL", err.localizedDescription, err)
       return
     }
 
     let asset = AVAsset(url: inputURL)
-    let startTimeCM = CMTime(seconds: startTime / 1000.0, preferredTimescale: 600)
-    let endTimeCM = CMTime(seconds: endTime / 1000.0, preferredTimescale: 600)
+    let startTimeCM = msToCMTime(startTime)
+    let endTimeCM = msToCMTime(endTime)
     let timeRange = CMTimeRange(start: startTimeCM, end: endTimeCM)
 
     let outputURL = getTempDirectory().appendingPathComponent(tempFileName)
@@ -1407,19 +1545,22 @@ class VideoEditorSdk: NSObject {
       return
     }
 
+    let sourceBitrate = self.originalVideoBitrate
+
     exportWithAssetWriter(
-        asset: composition,
-        videoComposition: videoComposition,
-        audioMix: nil,
-        outputURL: outputURL
-      ) { result in
+      asset: composition,
+      videoComposition: videoComposition,
+      audioMix: nil,
+      outputURL: outputURL,
+      sourceBitrate: sourceBitrate
+    ) { result in
         switch result {
         case .success(let url):
           resolve(url.absoluteString)
         case .failure(let error):
           reject("E_TRIM_FAILED", error.localizedDescription, error)
         }
-      }
+    }
   }
 
   // ORIGINAL
@@ -1508,7 +1649,7 @@ class VideoEditorSdk: NSObject {
 
     let videoComposition = AVMutableVideoComposition()
     videoComposition.renderSize = targetSize
-    videoComposition.frameDuration = CMTime(value: 1, timescale: 30)
+    videoComposition.frameDuration = VideoQualitySettings.nominalFrameDuration(for: videoTrack)
 
     let instruction = AVMutableVideoCompositionInstruction()
     instruction.timeRange = CMTimeRange(start: .zero, duration: asset.duration)
@@ -1521,6 +1662,8 @@ class VideoEditorSdk: NSObject {
     instruction.layerInstructions = [layerInstruction]
     videoComposition.instructions = [instruction]
 
+    let sourceBitrate = self.originalVideoBitrate
+
     let outputURL = getTempDirectory().appendingPathComponent(tempFileName)
     if FileManager.default.fileExists(atPath: outputURL.path) {
       try? FileManager.default.removeItem(at: outputURL)
@@ -1530,7 +1673,8 @@ class VideoEditorSdk: NSObject {
       asset: composition,
       videoComposition: videoComposition,
       audioMix: nil,
-      outputURL: outputURL
+      outputURL: outputURL,
+      sourceBitrate: sourceBitrate
     ) { result in
       switch result {
       case .success(let url):
@@ -1585,10 +1729,16 @@ class VideoEditorSdk: NSObject {
       return
     }
 
-    let portraitSize = CGSize(width: 1080, height: 1920)
+    // Use the source video's actual dimensions instead of a hardcoded 1080×1920
+    // so that HD, 4K, or sub-HD content keeps its original pixel count.
+    let rawTransformedSize = videoTrack.naturalSize.applying(videoTrack.preferredTransform)
+    let portraitSize = CGSize(
+      width: max(abs(rawTransformedSize.width), 1),
+      height: max(abs(rawTransformedSize.height), 1)
+    )
     let videoComposition = AVMutableVideoComposition()
     videoComposition.renderSize = portraitSize
-    videoComposition.frameDuration = CMTime(value: 1, timescale: 30)
+    videoComposition.frameDuration = VideoQualitySettings.nominalFrameDuration(for: videoTrack)
 
     let instruction = AVMutableVideoCompositionInstruction()
     instruction.timeRange = CMTimeRange(start: .zero, duration: asset.duration)
@@ -1634,6 +1784,8 @@ class VideoEditorSdk: NSObject {
       in: parentLayer
     )
 
+    let sourceBitrate = self.originalVideoBitrate
+
     let outputURL = getTempDirectory().appendingPathComponent(outputFileName)
     if FileManager.default.fileExists(atPath: outputURL.path) {
       try? FileManager.default.removeItem(at: outputURL)
@@ -1643,7 +1795,8 @@ class VideoEditorSdk: NSObject {
       asset: composition,
       videoComposition: videoComposition,
       audioMix: nil,
-      outputURL: outputURL
+      outputURL: outputURL,
+      sourceBitrate: sourceBitrate
     ) { result in
       switch result {
       case .success(let url):
@@ -1802,6 +1955,8 @@ class VideoEditorSdk: NSObject {
       return
     }
 
+    let sourceBitrate = self.originalVideoBitrate
+
     let outputURL = getTempDirectory().appendingPathComponent(tempFileName)
     if FileManager.default.fileExists(atPath: outputURL.path) {
       try? FileManager.default.removeItem(at: outputURL)
@@ -1816,7 +1971,8 @@ class VideoEditorSdk: NSObject {
       asset: composition,
       videoComposition: videoComposition,
       audioMix: nil,
-      outputURL: outputURL
+      outputURL: outputURL,
+      sourceBitrate: sourceBitrate
     ) { result in
       switch result {
       case .success(let url):
@@ -1835,6 +1991,7 @@ class VideoEditorSdk: NSObject {
 
     let asset = AVAsset(url: videoURL)
     let composition = AVMutableComposition()
+    let sourceBitrate = self.originalVideoBitrate
 
     // Add only video track (no audio)
     guard let videoTrack = asset.tracks(withMediaType: .video).first,
@@ -1866,7 +2023,8 @@ class VideoEditorSdk: NSObject {
         asset: composition,
         videoComposition: videoComposition,
         audioMix: nil,
-        outputURL: outputURL
+        outputURL: outputURL,
+        sourceBitrate: sourceBitrate
       ) { result in
         switch result {
         case .success(let url):
@@ -1947,6 +2105,7 @@ class VideoEditorSdk: NSObject {
       let textLayer = createTextLayer(
         text: text,
         fontSize: fontSize,
+        fontFamily: (overlay["fontFamily"] as? String) ?? "",
         color: colorString,
         overlayColor: (overlay["overlayColor"] as? String) ?? "#00000000",
         xNormalized: (overlay["xNormalized"] as? CGFloat) ?? 0.5,
@@ -1963,6 +2122,8 @@ class VideoEditorSdk: NSObject {
       in: parentLayer
     )
 
+    let sourceBitrate = self.originalVideoBitrate
+
     let outputURL = getTempDirectory().appendingPathComponent(outputFileName)
     if FileManager.default.fileExists(atPath: outputURL.path) {
       try? FileManager.default.removeItem(at: outputURL)
@@ -1977,7 +2138,8 @@ class VideoEditorSdk: NSObject {
       asset: composition,
       videoComposition: videoComposition,
       audioMix: nil,
-      outputURL: outputURL
+      outputURL: outputURL,
+      sourceBitrate: sourceBitrate
     ) { result in
       switch result {
       case .success(let url):
@@ -1991,6 +2153,7 @@ class VideoEditorSdk: NSObject {
   private func createTextLayer(
     text: String,
     fontSize: CGFloat,
+    fontFamily: String,
     color: String,
     overlayColor: String,
     xNormalized: CGFloat,
@@ -2007,7 +2170,7 @@ class VideoEditorSdk: NSObject {
     let maxFontSize = renderSize.height * 0.08  // 8% of video height maximum
     let finalFontSize = max(minFontSize, min(scaledFontSize, maxFontSize))
 
-    let fontName = "Inter-Bold"
+    let fontName = fontFamily.isEmpty ? "Inter-Bold" : fontFamily
 //    let font = UIFont.boldSystemFont(ofSize: finalFontSize)
     let font = UIFont(name: fontName, size: finalFontSize) ?? UIFont.boldSystemFont(ofSize: finalFontSize)
     textLayer.string = NSAttributedString(string: text)
@@ -2282,14 +2445,15 @@ class VideoEditorSdk: NSObject {
       return
     }
 
-    let availablePresets = AVAssetExportSession.exportPresets(compatibleWith: composition)
+    let sourceBitrate = self.originalVideoBitrate
 
     exportWithAssetWriter(
-        asset: composition,
-        videoComposition: videoComposition,
-        audioMix: nil,
-        outputURL: outputURL
-      ) { result in
+      asset: composition,
+      videoComposition: videoComposition,
+      audioMix: nil,
+      outputURL: outputURL,
+      sourceBitrate: sourceBitrate
+    ) { result in
         switch result {
         case .success(let url):
           completion(url)
@@ -2297,7 +2461,7 @@ class VideoEditorSdk: NSObject {
           print("Export failed: \(error.localizedDescription)")
           completion(nil)
         }
-      }
+    }
   }
 
 //   private func createSubtitleLayer(
