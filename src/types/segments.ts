@@ -24,6 +24,7 @@ export interface TextSegment extends BaseSegment {
   fontSize: number;
   color: string;
   backgroundColor: string;
+  fontFamily?: string;
   x?: number; // position on screen
   y?: number;
   alignment?: 'left' | 'center' | 'right';

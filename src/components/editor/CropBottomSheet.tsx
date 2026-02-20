@@ -16,6 +16,7 @@ import { CustomBottomSheet } from './CustomBottomSheet';
 // @ts-ignore - Peer dependency
 import type BottomSheet from '@gorhom/bottom-sheet';
 import { deviceUtils } from '../../utils/deviceUtils';
+import { useFontFamily } from '../../context/FontFamilyContext';
 
 type AspectRatio = {
   label: string;
@@ -91,6 +92,7 @@ const AspectRatioIcon: React.FC<AspectRatioIconProps> = ({
 export const CropBottomSheet: React.FC = () => {
   const { activeTool, setActiveTool } = useEditorContext();
   const { cropRatio, setCropRatio } = useEditorState();
+  const { fontStyle } = useFontFamily();
   const styles = createCropBottomSheetStyles();
   const [sheetIndex, setSheetIndex] = useState(-1);
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -149,6 +151,7 @@ export const CropBottomSheet: React.FC = () => {
                 style={[
                   styles.optionText,
                   isSelected && styles.selectedOptionText,
+                  fontStyle,
                 ]}
               >
                 {ratio.label}

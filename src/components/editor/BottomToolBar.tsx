@@ -7,6 +7,7 @@ import { ScaledSheet } from 'react-native-size-matters';
 import LinearGradient from 'react-native-linear-gradient';
 import { useEditorContext } from '../../context/EditorContext';
 import { useEditorState } from '../../context/EditorStateContext';
+import { useFontFamily } from '../../context/FontFamilyContext';
 import type { EditorTool } from '../../context/EditorContext';
 import { CAPTION_BG_COLORS, COLORS } from '../../constants/colors';
 import {
@@ -45,10 +46,11 @@ type ToolItemProps = {
   isEnabled: boolean;
   isSelected: boolean;
   onPress: (id: EditorTool) => void;
+  fontStyle?: object | null;
 };
 
 const ToolItem = React.memo(
-  ({ tool, isEnabled, isSelected, onPress }: ToolItemProps) => {
+  ({ tool, isEnabled, isSelected, onPress, fontStyle }: ToolItemProps) => {
     if (!isEnabled && tool.id !== 'save') return null;
 
     return (
@@ -72,7 +74,7 @@ const ToolItem = React.memo(
             tintColor="#fff"
           />
         </LinearGradient>
-        <Text style={styles.toolLabel}>{tool.label}</Text>
+        <Text style={[styles.toolLabel, fontStyle]}>{tool.label}</Text>
       </Pressable>
     );
   }
@@ -81,6 +83,7 @@ const ToolItem = React.memo(
 export const BottomToolBar = React.memo(
   ({ onToolPress, onExport }: BottomToolBarProps) => {
     const { setActiveTool, enabledTools, activeTool } = useEditorContext();
+    const { fontStyle } = useFontFamily();
     const {
       setAudioUri,
       setActiveSegment,
@@ -203,10 +206,11 @@ export const BottomToolBar = React.memo(
             isEnabled={enabledTools[tool.id] ?? true}
             isSelected={activeTool === tool.id}
             onPress={handlePress}
+            fontStyle={fontStyle}
           />
         );
       },
-      [enabledTools, activeTool, handlePress]
+      [enabledTools, activeTool, handlePress, fontStyle]
     );
 
     const keyExtractor = useCallback((item: any) => item.id, []);

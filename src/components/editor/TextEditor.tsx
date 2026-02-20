@@ -7,6 +7,7 @@ import {
   ScrollView,
   Keyboard,
   Platform,
+  Image,
   // @ts-ignore - Peer dependency
 } from 'react-native';
 // @ts-ignore - Peer dependency
@@ -25,10 +26,13 @@ import Animated, {
   withTiming,
   // @ts-ignore - Peer dependency
 } from 'react-native-reanimated';
+// @ts-ignore - Peer dependency
+import { CloseIcon } from '../../assets/icons/index.js';
 import { FONT_SIZE_MIN, FONT_SIZE_MAX } from '../../constants/dimensions';
 import { createTextEditorStyles } from './TextEditorStyles';
 import type { TextSegment } from '../../types/segments';
 import { deviceUtils } from '../../utils/deviceUtils';
+import { useFontFamily } from '../../context/FontFamilyContext';
 
 // Window dimensions removed as centering now uses PREVIEW area constants
 
@@ -54,6 +58,7 @@ const FontSizeSlider: React.FC<FontSizeSliderProps> = ({
   const minFontSize = FONT_SIZE_MIN;
   const maxFontSize = FONT_SIZE_MAX;
   const styles = createTextEditorStyles();
+  const { fontStyle } = useFontFamily();
 
   const initialY =
     sliderHeight -
@@ -102,7 +107,7 @@ const FontSizeSlider: React.FC<FontSizeSliderProps> = ({
   return (
     <View style={styles.slider}>
       <Animated.View style={labelAnimatedStyle}>
-        <Text style={styles.sliderLabel}>{maxFontSize}</Text>
+        <Text style={[styles.sliderLabel, fontStyle]}>{maxFontSize}</Text>
       </Animated.View>
       <View style={styles.sliderContainer}>
         <View style={[styles.sliderTrack, { height: sliderHeight }]}>
@@ -118,14 +123,14 @@ const FontSizeSlider: React.FC<FontSizeSliderProps> = ({
               labelAnimatedStyle,
             ]}
           >
-            <Text style={styles.movingFontSizeText}>
+            <Text style={[styles.movingFontSizeText, fontStyle]}>
               {Math.round(fontSize)}
             </Text>
           </Animated.View>
         </View>
       </View>
       <Animated.View style={labelAnimatedStyle}>
-        <Text style={styles.sliderLabel}>{minFontSize}</Text>
+        <Text style={[styles.sliderLabel, fontStyle]}>{minFontSize}</Text>
       </Animated.View>
     </View>
   );
@@ -135,6 +140,7 @@ type TextEditorProps = {
   onCancel: () => void;
   onDone: (textData: Partial<TextSegment> & { id?: string | null }) => void;
   initialTextElement?: TextSegment | null;
+  fontFamily?: string;
 };
 
 const PressableWrapper = Platform.OS === 'ios' ? Pressable : GHPressable;
@@ -144,6 +150,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
   onCancel,
   onDone,
   initialTextElement,
+  fontFamily,
 }) => {
   const insets = useSafeAreaInsets();
   const [text, setText] = useState(initialTextElement?.text || '');
@@ -164,6 +171,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
 
   const styles = createTextEditorStyles();
   const textInputRef = useRef<TextInput>(null);
+  const { fontStyle } = useFontFamily();
 
   useEffect(() => {
     const keyboardWillShow = Keyboard.addListener(
@@ -273,8 +281,9 @@ export const TextEditor: React.FC<TextEditorProps> = ({
   const textDisplayStyle = {
     fontSize: fontSize,
     color: text ? textColor : 'rgba(255,255,255,0.7)',
-    fontWeight: 'bold' as const,
+    fontWeight: fontFamily ? ('normal' as const) : ('bold' as const),
     textAlign: 'center' as const,
+    fontFamily: fontFamily,
   };
   const textBackgroundStyle = {
     backgroundColor: text.trim() ? backgroundColor : 'transparent',
@@ -329,10 +338,10 @@ export const TextEditor: React.FC<TextEditorProps> = ({
         ]}
       >
         <PressableWrapper onPress={onCancel}>
-          <Text style={styles.headerButton}>Cancel</Text>
+          <Text style={[styles.headerButton, fontStyle]}>Cancel</Text>
         </PressableWrapper>
         <PressableWrapper onPress={handleDone}>
-          <Text style={styles.headerButton}>Done</Text>
+          <Text style={[styles.headerButton, fontStyle]}>Done</Text>
         </PressableWrapper>
       </View>
       <PressableWrapper
@@ -403,7 +412,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                   ]}
                 >
                   {color === 'transparent' && (
-                    <Text style={styles.transparentIcon}>✕</Text>
+                    <Image style={styles.transparentIcon} source={CloseIcon} />
                   )}
                 </PressableWrapper>
               ))}
@@ -416,6 +425,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
               style={[
                 styles.tabText,
                 activeTab === 'Font' && styles.activeTabText,
+                fontStyle,
               ]}
             >
               Font
@@ -426,6 +436,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
               style={[
                 styles.tabText,
                 activeTab === 'Background' && styles.activeTabText,
+                fontStyle,
               ]}
             >
               Background

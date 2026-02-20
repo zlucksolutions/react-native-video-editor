@@ -55,6 +55,7 @@ import {
 import { deviceUtils } from '../../utils/deviceUtils';
 import { TimelineHeader } from '../timeline/TimelineHeader';
 import { createTimelineStyles } from './TimelineStyles';
+import { useFontFamily } from '../../context/FontFamilyContext';
 // @ts-ignore - Peer dependency
 import { MuteIcon, UnMuteIcon, TrashIcon } from '../../assets/icons/index.js';
 
@@ -129,6 +130,7 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
     } = trimming;
 
     const styles = useMemo(() => createTimelineStyles(), []);
+    const { fontStyle } = useFontFamily();
 
     // Generate thumbnails - source should already be resolved to URI string by VideoEditorSDK
     const validVideoSource =
@@ -957,8 +959,8 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                 handleSelectMusic();
               }}
             >
-              <Text style={styles.addButtonIcon}>+</Text>
-              <Text style={styles.addButtonText}>Add audio</Text>
+              <Text style={[styles.addButtonIcon, fontStyle]}>+</Text>
+              <Text style={[styles.addButtonText, fontStyle]}>Add audio</Text>
             </PressableWrapper>
           </View>
         );
@@ -973,8 +975,8 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
               handleSelectMusic();
             }}
           >
-            <Text style={styles.addButtonIcon}>+</Text>
-            <Text style={styles.addButtonText}>Add audio</Text>
+            <Text style={[styles.addButtonIcon, fontStyle]}>+</Text>
+            <Text style={[styles.addButtonText, fontStyle]}>Add audio</Text>
           </PressableWrapper>
         </View>
       ) : (
@@ -1024,6 +1026,7 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                           style={[
                             styles.segmentLabel,
                             { color: segment.color },
+                            fontStyle,
                           ]}
                           numberOfLines={1}
                           ellipsizeMode="tail"
@@ -1036,6 +1039,7 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                             style={[
                               styles.loopFileNameText,
                               { color: segment.color },
+                              fontStyle,
                             ]}
                             numberOfLines={1}
                             ellipsizeMode="tail"
@@ -1051,6 +1055,7 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                             style={[
                               styles.loopIndicatorText,
                               { color: segment.color },
+                              fontStyle,
                             ]}
                           >
                             {i}
@@ -1080,6 +1085,7 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                               style={[
                                 styles.loopFileNameText,
                                 { color: segment.color },
+                                fontStyle,
                               ]}
                               numberOfLines={1}
                               ellipsizeMode="tail"
@@ -1098,6 +1104,7 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                               style={[
                                 styles.loopIndicatorText,
                                 { color: segment.color },
+                                fontStyle,
                               ]}
                             >
                               {repeatCount}
@@ -1118,6 +1125,7 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                               style={[
                                 styles.loopIndicatorText,
                                 { color: segment.color },
+                                fontStyle,
                               ]}
                             >
                               {repeatCount}
@@ -1182,7 +1190,11 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                   ]}
                 >
                   <Text
-                    style={[styles.segmentLabel, { color: segment.color }]}
+                    style={[
+                      styles.segmentLabel,
+                      { color: segment.color },
+                      fontStyle,
+                    ]}
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
@@ -1222,8 +1234,8 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                 onSegmentPress?.();
               }}
             >
-              <Text style={styles.addButtonIcon}>+</Text>
-              <Text style={styles.addButtonText}>Add text</Text>
+              <Text style={[styles.addButtonIcon, fontStyle]}>+</Text>
+              <Text style={[styles.addButtonText, fontStyle]}>Add text</Text>
             </PressableWrapper>
           </View>
         );
@@ -1256,7 +1268,11 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                   ]}
                 >
                   <Text
-                    style={[styles.segmentLabel, styles.textSegmentLabel]}
+                    style={[
+                      styles.segmentLabel,
+                      styles.textSegmentLabel,
+                      fontStyle,
+                    ]}
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
@@ -1282,7 +1298,11 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                     }
                   >
                     <Text
-                      style={[styles.segmentLabel, styles.textSegmentLabel]}
+                      style={[
+                        styles.segmentLabel,
+                        styles.textSegmentLabel,
+                        fontStyle,
+                      ]}
                       numberOfLines={1}
                       ellipsizeMode="tail"
                     >
@@ -1364,8 +1384,10 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                 onSegmentPress?.();
               }}
             >
-              <Text style={styles.addButtonIcon}>+</Text>
-              <Text style={styles.addButtonText}>Add voiceover</Text>
+              <Text style={[styles.addButtonIcon, fontStyle]}>+</Text>
+              <Text style={[styles.addButtonText, fontStyle]}>
+                Add voiceover
+              </Text>
             </PressableWrapper>
           </View>
         );
@@ -1381,8 +1403,10 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                 onSegmentPress?.();
               }}
             >
-              <Text style={styles.addButtonIcon}>+</Text>
-              <Text style={styles.addButtonText}>Add voiceover</Text>
+              <Text style={[styles.addButtonIcon, fontStyle]}>+</Text>
+              <Text style={[styles.addButtonText, fontStyle]}>
+                Add voiceover
+              </Text>
             </PressableWrapper>
           </View>
         );
@@ -1416,7 +1440,11 @@ export const Timeline: React.FC<TimelineProps> = React.memo(
                 ]}
               >
                 <Text
-                  style={[styles.segmentLabel, styles.voiceoverSegmentLabel]}
+                  style={[
+                    styles.segmentLabel,
+                    styles.voiceoverSegmentLabel,
+                    fontStyle,
+                  ]}
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >

@@ -33,6 +33,7 @@ type VideoElement = {
 
   text?: string;
   fontSize?: number;
+  fontFamily?: string;
   textColor?: string;
   textOverlayColor?: string;
   textPosition?: {
@@ -373,6 +374,7 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
           type: 'addTextOverlay',
           text: segment.text,
           fontSize: getFontSizeForVideo(segment.fontSize),
+          fontFamily: segment.fontFamily,
           textColor: segment.color,
           textOverlayColor: segment.backgroundColor,
           textPosition: {
@@ -396,6 +398,7 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
         type: 'addTextOverlay',
         text: segment.text,
         fontSize: getFontSizeForVideo(segment.fontSize),
+        fontFamily: segment.fontFamily,
         textColor: segment.color,
         textOverlayColor: segment.backgroundColor,
         textPosition: {
@@ -429,6 +432,7 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
             type: 'addTextOverlay',
             text: segment.text,
             fontSize: getFontSizeForVideo(segment.fontSize),
+            fontFamily: segment.fontFamily,
             textColor: segment.color,
             textOverlayColor: segment.backgroundColor,
             textPosition: {
@@ -463,6 +467,7 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
             type: 'addTextOverlay',
             text: segment.text,
             fontSize: getFontSizeForVideo(segment.fontSize),
+            fontFamily: segment.fontFamily,
             textColor: segment.color,
             textOverlayColor: segment.backgroundColor,
             textPosition: {
@@ -497,6 +502,7 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
             type: 'addTextOverlay',
             text: segment.text,
             fontSize: getFontSizeForVideo(segment.fontSize),
+            fontFamily: segment.fontFamily,
             textColor: segment.color,
             textOverlayColor: segment.backgroundColor,
             textPosition: {
@@ -531,6 +537,7 @@ export const EditorStateProvider: React.FC<EditorStateProviderProps> = ({
               type: 'addTextOverlay',
               text: segment.text,
               fontSize: getFontSizeForVideo(segment.fontSize),
+              fontFamily: segment.fontFamily,
               textColor: segment.color,
               textOverlayColor: segment.backgroundColor,
               textPosition: {

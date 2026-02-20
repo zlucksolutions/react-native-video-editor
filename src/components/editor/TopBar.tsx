@@ -4,6 +4,7 @@ import { View, Text, Pressable, StatusBar, Image } from 'react-native';
 // @ts-ignore - Peer dependency
 import { ScaledSheet } from 'react-native-size-matters';
 import { deviceUtils } from '../../utils/deviceUtils';
+import { useFontFamily } from '../../context/FontFamilyContext';
 // @ts-ignore - Peer dependency
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // @ts-ignore - Peer dependency
@@ -18,6 +19,7 @@ type Props = {
 
 export const TopBar: React.FC<Props> = React.memo(({ onCancel, onExport }) => {
   const { top } = useSafeAreaInsets();
+  const { fontStyle } = useFontFamily();
   const [showDiscardAlert, setShowDiscardAlert] = useState(false);
 
   const handleCancelPress = () => {
@@ -54,7 +56,7 @@ export const TopBar: React.FC<Props> = React.memo(({ onCancel, onExport }) => {
         onPress={onExport}
         style={[styles.headerButton, styles.nextButton]}
       >
-        <Text style={styles.nextButtonText}>Next</Text>
+        <Text style={[styles.nextButtonText, fontStyle]}>Next</Text>
       </Pressable>
 
       <EditorModal

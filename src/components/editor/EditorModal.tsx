@@ -4,6 +4,7 @@ import { View, Text, Pressable, Modal, ActivityIndicator } from 'react-native';
 // @ts-ignore - Peer dependency
 import { ScaledSheet } from 'react-native-size-matters';
 import { COLORS } from '../../constants/colors';
+import { useFontFamily } from '../../context/FontFamilyContext';
 
 type ModalType = 'alert' | 'loader';
 
@@ -30,6 +31,7 @@ export const EditorModal: React.FC<EditorModalProps> = ({
   onCancel,
   onRequestClose,
 }) => {
+  const { fontStyle } = useFontFamily();
   return (
     <Modal
       visible={visible}
@@ -39,27 +41,35 @@ export const EditorModal: React.FC<EditorModalProps> = ({
     >
       <View style={styles.modalOverlay}>
         <View style={styles.alertContainer}>
-          {title && <Text style={styles.alertTitle}>{title}</Text>}
+          {title && <Text style={[styles.alertTitle, fontStyle]}>{title}</Text>}
 
           {type === 'loader' ? (
             <View style={styles.loaderContainer}>
               <ActivityIndicator size="large" color={COLORS.ACCENT_PINK} />
               {message && (
-                <Text style={[styles.alertMessage, styles.loaderMessage]}>
+                <Text
+                  style={[styles.alertMessage, styles.loaderMessage, fontStyle]}
+                >
                   {message}
                 </Text>
               )}
             </View>
           ) : (
             <>
-              {message && <Text style={styles.alertMessage}>{message}</Text>}
+              {message && (
+                <Text style={[styles.alertMessage, fontStyle]}>{message}</Text>
+              )}
               <View style={styles.alertButtons}>
                 <Pressable onPress={onCancel} style={styles.keepButton}>
-                  <Text style={styles.keepButtonText}>{cancelLabel}</Text>
+                  <Text style={[styles.keepButtonText, fontStyle]}>
+                    {cancelLabel}
+                  </Text>
                 </Pressable>
 
                 <Pressable onPress={onConfirm} style={styles.discardButton}>
-                  <Text style={styles.discardButtonText}>{confirmLabel}</Text>
+                  <Text style={[styles.discardButtonText, fontStyle]}>
+                    {confirmLabel}
+                  </Text>
                 </Pressable>
               </View>
             </>

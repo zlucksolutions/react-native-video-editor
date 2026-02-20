@@ -32,6 +32,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { EditorProvider, useEditorContext } from '../context/EditorContext';
 import {
+  FontFamilyProvider,
+  useFontFamily,
+} from '../context/FontFamilyContext';
+import {
   EditorStateProvider,
   useEditorState,
 } from '../context/EditorStateContext';
@@ -72,8 +76,10 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
   editBGM = false,
   editTextOverlay = false,
   editVoiceOver = false,
+  fontFamily,
   onCloseEditor,
 }) => {
+  const { fontStyle: ctxFontStyle } = useFontFamily();
   const {
     initEditor,
     buildExportConfig,
@@ -201,6 +207,25 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
       }
 
       const config = buildExportConfig();
+
+      // If no actual operations exist (only videoUri) and video is not muted, return source URI as-is
+      const sourceElement = config.videoElements.find(
+        (el: any) => el.type === 'videoUri'
+      );
+      const hasOperations = config.videoElements.some(
+        (el: any) => el.type !== 'videoUri'
+      );
+      const isMuted = sourceElement?.muted === true;
+
+      if (!hasOperations && !isMuted) {
+        setIsExporting(false);
+        onCloseEditor({
+          success: true,
+          exportedUri: sourceElement?.uri ?? (sourceUri || String(source)),
+        });
+        return;
+      }
+
       const exportedUri = await VideoEditorNative.applyEdits(config);
       setIsExporting(false);
       onCloseEditor({ success: true, exportedUri });
@@ -284,6 +309,7 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
             fontSize: textData.fontSize || FONT_SIZE_MIN,
             color: textData.color || 'white',
             backgroundColor: textData.backgroundColor || 'transparent',
+            fontFamily: fontFamily,
             x: textData.x ?? 0,
             y: textData.y ?? 0,
           });
@@ -296,6 +322,7 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
             fontSize: textData.fontSize || FONT_SIZE_MIN,
             color: textData.color || 'white',
             backgroundColor: textData.backgroundColor || 'transparent',
+            fontFamily: fontFamily,
             start: currentTime,
             end: duration,
             x: textData.x ?? 0,
@@ -566,7 +593,7 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
           ]}
         >
           <View style={styles.swipeHandle} />
-          <Text style={styles.swipeText}>Swipe up to edit</Text>
+          <Text style={[styles.swipeText, ctxFontStyle]}>Swipe up to edit</Text>
         </Animated.View>
 
         {/* Timeline Section - Absolute Positioned at Bottom */}
@@ -655,13 +682,16 @@ const VideoEditorSDKContentInner: React.FC<VideoEditorSDKProps> = ({
             onCancel={handleTextEditorCancel}
             onDone={handleTextEditorDone}
             initialTextElement={editingTextElement}
+            fontFamily={fontFamily}
           />
         )}
 
         {/* Delete Zone for Text Dragging */}
         {isTextDragging && (
           <View style={styles.deleteZoneContainer}>
-            <Text style={styles.deleteZoneText}>Drag here to delete</Text>
+            <Text style={[styles.deleteZoneText, ctxFontStyle]}>
+              Drag here to delete
+            </Text>
             <View style={styles.deleteZoneCircle}>
               <Image style={styles.deleteZoneIcon} source={BinIcon} />
             </View>
@@ -697,19 +727,22 @@ const VideoEditorSDKContent: React.FC<VideoEditorSDKProps> = (props) => {
 
 export const VideoEditorSDK: React.FC<VideoEditorSDKProps> = (props) => {
   return (
-    <SafeAreaProvider>
-      <EditorStateProvider>
-        <VideoEditorSDKContent
-          editTrim={props.editTrim}
-          editCrop={props.editCrop}
-          editBGM={props.editBGM}
-          editTextOverlay={props.editTextOverlay}
-          editVoiceOver={props.editVoiceOver}
-          source={props.source}
-          onCloseEditor={props.onCloseEditor}
-        />
-      </EditorStateProvider>
-    </SafeAreaProvider>
+    <FontFamilyProvider fontFamily={props.fontFamily}>
+      <SafeAreaProvider>
+        <EditorStateProvider>
+          <VideoEditorSDKContent
+            editTrim={props.editTrim}
+            editCrop={props.editCrop}
+            editBGM={props.editBGM}
+            editTextOverlay={props.editTextOverlay}
+            editVoiceOver={props.editVoiceOver}
+            source={props.source}
+            fontFamily={props.fontFamily}
+            onCloseEditor={props.onCloseEditor}
+          />
+        </EditorStateProvider>
+      </SafeAreaProvider>
+    </FontFamilyProvider>
   );
 };
 

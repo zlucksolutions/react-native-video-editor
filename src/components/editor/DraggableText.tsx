@@ -318,6 +318,7 @@ export const DraggableText: React.FC<DraggableTextProps> = ({
               {
                 color: element.color,
                 backgroundColor: element.backgroundColor || 'transparent',
+                fontFamily: element.fontFamily,
               },
               animatedTextStyle,
             ]}

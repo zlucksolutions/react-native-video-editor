@@ -8,6 +8,7 @@ export type VideoEditorSDKProps = {
   editBGM?: boolean;
   editTextOverlay?: boolean;
   editVoiceOver?: boolean;
+  fontFamily?: string;
 
   onCloseEditor: (result: {
     success: boolean;

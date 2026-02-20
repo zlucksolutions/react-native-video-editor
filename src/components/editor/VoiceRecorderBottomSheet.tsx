@@ -31,6 +31,7 @@ import { Pressable as PressableGH } from 'react-native-gesture-handler';
 import type BottomSheet from '@gorhom/bottom-sheet';
 import { StyleFunction } from './VoiceRecorderBottomSheetStyles';
 import { CustomBottomSheet } from './CustomBottomSheet';
+import { useFontFamily } from '../../context/FontFamilyContext';
 import AudioRecorderPlayer, {
   AudioEncoderAndroidType,
   AudioSourceAndroidType,
@@ -77,6 +78,7 @@ export const VoiceRecorderBottomSheet: React.FC<VoiceRecorderBottomSheetProps> =
     }) => {
       // All hooks must be called before any early returns
       const pulse = useSharedValue(1);
+      const { fontStyle } = useFontFamily();
 
       const [isRecording, setIsRecording] = useState(false);
       const [recordTime, setRecordTime] = useState(0);
@@ -451,7 +453,7 @@ export const VoiceRecorderBottomSheet: React.FC<VoiceRecorderBottomSheetProps> =
           <View style={styles.content}>
             {/* Recording Info */}
             <View style={styles.recordingInfo}>
-              <Text style={styles.videoTimeText}>
+              <Text style={[styles.videoTimeText, fontStyle]}>
                 Voiceover will start at: {formatTime(videoCurrentTime * 1000)}
               </Text>
             </View>
@@ -487,7 +489,7 @@ export const VoiceRecorderBottomSheet: React.FC<VoiceRecorderBottomSheetProps> =
 
             {/* Timer */}
             <View style={styles.timerContainer}>
-              <Text style={styles.remainingTimeText}>
+              <Text style={[styles.remainingTimeText, fontStyle]}>
                 {formatTime(recordTime)} / {formatTime(maxRecordingDurationMs)}
               </Text>
             </View>
@@ -499,9 +501,9 @@ export const VoiceRecorderBottomSheet: React.FC<VoiceRecorderBottomSheetProps> =
               style={styles.footerButton}
               onPress={handleRequestClose}
             >
-              <Text style={styles.footerButtonText}>Cancel</Text>
+              <Text style={[styles.footerButtonText, fontStyle]}>Cancel</Text>
             </PressableWrapper>
-            <Text style={styles.footerTitle}>Voiceover</Text>
+            <Text style={[styles.footerTitle, fontStyle]}>Voiceover</Text>
             <PressableWrapper
               style={styles.footerButton}
               onPress={handleDone}
@@ -511,6 +513,7 @@ export const VoiceRecorderBottomSheet: React.FC<VoiceRecorderBottomSheetProps> =
                 style={[
                   styles.doneButtonText,
                   (!recordedAudioUri || isRecording) && styles.disabledButton,
+                  fontStyle,
                 ]}
               >
                 Done

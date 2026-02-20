@@ -33,6 +33,7 @@ import {
 import { useEditorState } from '../../context/EditorStateContext';
 import { createAudioTrimmerStyles } from './AudioTrimmerBottomSheetStyles';
 import { deviceUtils } from '../../utils/deviceUtils';
+import { useFontFamily } from '../../context/FontFamilyContext';
 // @ts-ignore - Peer dependency
 import { LoopCycleIcon } from '../../assets/icons/index.js';
 
@@ -108,6 +109,7 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
   }, [propAudioInfo, audioUri, normalizeAudioUri]);
 
   const styles = useMemo(() => createAudioTrimmerStyles(), []);
+  const { fontStyle } = useFontFamily();
 
   const PIXELS_PER_SECOND = 18;
   const BAR_WIDTH = 3;
@@ -416,7 +418,7 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
   return (
     <Animated.View style={[styles.trimmerContainer, style]}>
       <View style={styles.titleContainer}>
-        <Text style={styles.title}>
+        <Text style={[styles.title, fontStyle]}>
           Choose the {Math.round(selectDuration)}s audio part for your pulse.
         </Text>
         {showLoopOption && (
@@ -479,10 +481,12 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
 
       <View style={styles.controlsContainer}>
         <RNPressable onPress={handleCancel}>
-          <Text style={styles.actionButton}>Cancel</Text>
+          <Text style={[styles.actionButton, fontStyle]}>Cancel</Text>
         </RNPressable>
         <RNPressable onPress={handleConfirm}>
-          <Text style={[styles.actionButton, styles.doneButton]}>Done</Text>
+          <Text style={[styles.actionButton, styles.doneButton, fontStyle]}>
+            Done
+          </Text>
         </RNPressable>
       </View>
 

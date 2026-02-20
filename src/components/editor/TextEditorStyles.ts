@@ -161,6 +161,7 @@ export const createTextEditorStyles = () =>
     },
     transparentIcon: {
       color: '#fff',
-      fontSize: '12@ms',
+      height: '12@ms',
+      width: '12@ms',
     },
   });

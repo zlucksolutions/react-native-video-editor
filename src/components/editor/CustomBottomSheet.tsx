@@ -6,6 +6,7 @@ import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 // @ts-ignore - Peer dependency
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createCustomBottomSheetStyles } from './CustomBottomSheetStyles';
+import { useFontFamily } from '../../context/FontFamilyContext';
 
 type CustomBottomSheetProps = {
   snapPoints?: Array<string | number>;
@@ -57,6 +58,7 @@ export const CustomBottomSheet = React.memo(
       ref
     ) => {
       const styles = createCustomBottomSheetStyles();
+      const { fontStyle } = useFontFamily();
 
       const renderBackdrop = useCallback(
         (backdropProps: any) => (
@@ -115,7 +117,9 @@ export const CustomBottomSheet = React.memo(
           <>
             {!showNoHeader && title && (
               <View style={[styles.titleContainer, headerStyle]}>
-                <Text style={[styles.bottomSheetTitle, headerTextStyle]}>
+                <Text
+                  style={[styles.bottomSheetTitle, headerTextStyle, fontStyle]}
+                >
                   {title}
                 </Text>
                 <TouchableOpacity
@@ -126,6 +130,7 @@ export const CustomBottomSheet = React.memo(
                     style={[
                       styles.closeText,
                       closeIconColor ? { color: closeIconColor } : null,
+                      fontStyle,
                     ]}
                   >
                     ✕
