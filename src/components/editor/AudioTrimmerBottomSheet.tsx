@@ -42,6 +42,10 @@ const clamp = (v: number, min: number, max: number) =>
   Math.max(min, Math.min(max, v));
 const SELECT_WIDTH = 200;
 const FLING_VELOCITY_THRESHOLD = 0.1;
+const PIXELS_PER_SECOND = 18;
+const BAR_WIDTH = 3;
+const BAR_GAP = 3;
+const SCROLL_PADDING = (SCREEN_WIDTH - SELECT_WIDTH) / 2;
 
 type AudioInfo = {
   uri: string;
@@ -111,22 +115,26 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
   const styles = useMemo(() => createAudioTrimmerStyles(), []);
   const { fontStyle } = useFontFamily();
 
-  const PIXELS_PER_SECOND = 18;
-  const BAR_WIDTH = 3;
-  const BAR_GAP = 3;
-  const SCROLL_PADDING = (SCREEN_WIDTH - SELECT_WIDTH) / 2;
-
   const [audioDuration, setAudioDuration] = useState(0);
   const [selectDuration, setSelectDuration] = useState(maxDuration);
   const [offsetSec, setOffsetSec] = useState(0);
   const [isLooped, setIsLooped] = useState(false);
   const [isAudioPaused, setIsAudioPaused] = useState(true);
+  const [isScrollingState, setIsScrollingState] = useState(false);
 
   const audioPlayerRef = useRef<any>(null);
   const isUserScrolling = useRef(false);
   const lastVideoTimeRef = useRef(0);
   const lastSyncTimeRef = useRef(0);
   const seekTimeout = useRef<any>(null);
+
+  const scrollStateRef = useRef({
+    audioDuration: 0,
+    selectDuration: maxDuration,
+  });
+  useEffect(() => {
+    scrollStateRef.current = { audioDuration, selectDuration };
+  }, [audioDuration, selectDuration]);
 
   const isAudioPausedRef = useRef(isAudioPaused);
   useEffect(() => {
@@ -164,21 +172,6 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
     }
   }, [info, maxDuration, setCurrentTime, setIsPlaying, videoRef]);
 
-  const handleAudioLoad = (data: any) => {
-    const duration = data.duration;
-    setAudioDuration(duration);
-    setSelectDuration(Math.min(duration, maxDuration));
-    // Sync audio to start (0) when audio loads
-    syncPlayer(0);
-    // Ensure video is at start and playing
-    setCurrentTime(0);
-    if (videoRef?.current) {
-      videoRef.current.seek(0);
-    }
-    setIsPlaying(true);
-    onAudioReady?.();
-  };
-
   const SYNC_THRESHOLD = 0.5; // Only sync if time difference is more than 0.5 seconds
 
   const syncPlayer = useCallback(
@@ -204,6 +197,31 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
       lastSyncTimeRef.current = timeToSyncWith;
     },
     [audioDuration, isLooped, offsetSec, selectDuration]
+  );
+
+  const handleAudioLoad = useCallback(
+    (data: any) => {
+      const duration = data.duration;
+      setAudioDuration(duration);
+      setSelectDuration(Math.min(duration, maxDuration));
+      // Sync audio to start (0) when audio loads
+      syncPlayer(0);
+      // Ensure video is at start and playing
+      setCurrentTime(0);
+      if (videoRef?.current) {
+        videoRef.current.seek(0);
+      }
+      setIsPlaying(true);
+      onAudioReady?.();
+    },
+    [
+      maxDuration,
+      syncPlayer,
+      setCurrentTime,
+      videoRef,
+      setIsPlaying,
+      onAudioReady,
+    ]
   );
 
   useEffect(() => {
@@ -273,25 +291,37 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
     mainVideoDuration,
   ]);
 
-  const handleInternalProgress = (data: any) => {
-    if (isUserScrolling.current || isAudioPausedRef.current) {
-      return;
-    }
-    const relativeTime = data.currentTime - offsetSec;
-    if (!isLooped && relativeTime >= selectDuration) {
-      setIsAudioPaused(true);
+  const handleInternalProgress = useCallback(
+    (data: any) => {
+      if (isUserScrolling.current || isAudioPausedRef.current) {
+        return;
+      }
+      const relativeTime = data.currentTime - offsetSec;
+      if (!isLooped && relativeTime >= selectDuration) {
+        setIsAudioPaused(true);
 
-      audioPlayerRef.current?.seek(offsetSec);
-      return;
-    }
+        audioPlayerRef.current?.seek(offsetSec);
+        return;
+      }
+    },
+    [isLooped, offsetSec, selectDuration]
+  );
 
-    if (!isAudioPausedRef.current) {
-      // Logic removed as progress tracks video
-    }
-  };
-
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     if (!info) return;
+
+    setIsAudioPaused(true);
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.seek(offsetSec);
+    }
+    lastSyncTimeRef.current = 0;
+    lastVideoTimeRef.current = 0;
+
+    setCurrentTime(0);
+    if (videoRef?.current) {
+      videoRef.current.seek(0);
+    }
+
     const trimmedAudio = {
       uri: info.uri,
       name: info.name,
@@ -300,86 +330,104 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
       isLooped: isLooped,
     };
     onConfirm?.(trimmedAudio);
-  };
+  }, [
+    info,
+    offsetSec,
+    selectDuration,
+    isLooped,
+    onConfirm,
+    setCurrentTime,
+    videoRef,
+  ]);
 
-  const handleCancel = () => {
-    // Clear audio-related state
+  const handleCancel = useCallback(() => {
     setAudioUri(null);
     setCurrentTime(0);
-    onClose?.();
-  };
-
-  const toggleLoop = () => {
-    setIsLooped((prev) => !prev);
-  };
-
-  const handleScrollBegin = () => {
-    isUserScrolling.current = true;
-    // Pause video when user starts trimming
-    if (isVideoPlaying) {
-      setIsPlaying(false);
+    if (videoRef?.current) {
+      videoRef.current.seek(0);
     }
+    onClose?.();
+  }, [setAudioUri, setCurrentTime, videoRef, onClose]);
+
+  const toggleLoop = useCallback(() => {
+    setIsLooped((prev) => !prev);
+  }, []);
+
+  const handleScrollBegin = useCallback(() => {
+    isUserScrolling.current = true;
+    setIsScrollingState(true);
+    // Pause video when user starts trimming
+    setIsPlaying(false);
     // Pause audio player
     if (!isAudioPausedRef.current) {
       setIsAudioPaused(true);
     }
-  };
+  }, [setIsPlaying]);
 
-  const handleScrollEnd = (finalScrollX: number) => {
-    clearTimeout(seekTimeout.current);
+  const handleScrollEnd = useCallback(
+    (finalScrollX: number) => {
+      clearTimeout(seekTimeout.current);
 
-    seekTimeout.current = setTimeout(() => {
-      isUserScrolling.current = false;
+      seekTimeout.current = setTimeout(() => {
+        isUserScrolling.current = false;
+        const { audioDuration: aDur, selectDuration: sDur } =
+          scrollStateRef.current;
 
-      const finalOffset = clamp(
-        finalScrollX / 8.2,
-        0,
-        audioDuration - selectDuration
-      );
-      setOffsetSec(finalOffset);
-      audioPlayerRef.current?.seek(finalOffset);
+        const finalOffset = clamp(finalScrollX / 8.2, 0, aDur - sDur);
+        setOffsetSec(finalOffset);
+        audioPlayerRef.current?.seek(finalOffset);
 
-      // After trimming ends, seek video to 0 and start playing
-      setCurrentTime(0);
-      if (videoRef?.current) {
-        videoRef.current.seek(0);
-      }
-      setIsPlaying(true);
+        // After trimming ends, seek video to 0 and start playing
+        setCurrentTime(0);
+        if (videoRef?.current) {
+          videoRef.current.seek(0);
+        }
+        setIsPlaying(true);
+        setIsScrollingState(false);
 
-      onSelectionChangeEnd?.();
-    }, 100);
-  };
-
-  const scrollHandler = useAnimatedScrollHandler({
-    onBeginDrag: () => {
-      runOnJS(handleScrollBegin)();
+        onSelectionChangeEnd?.();
+      }, 100);
     },
-    onEndDrag: (event: any) => {
-      if (Math.abs(event.velocity.x || 0) < FLING_VELOCITY_THRESHOLD) {
+    [setCurrentTime, videoRef, setIsPlaying, onSelectionChangeEnd]
+  );
+
+  const scrollHandler = useAnimatedScrollHandler(
+    {
+      onBeginDrag: () => {
+        runOnJS(handleScrollBegin)();
+      },
+      onEndDrag: (event: any) => {
+        if (Math.abs(event.velocity.x || 0) < FLING_VELOCITY_THRESHOLD) {
+          runOnJS(handleScrollEnd)(event.contentOffset.x);
+        }
+      },
+      onMomentumEnd: (event: any) => {
         runOnJS(handleScrollEnd)(event.contentOffset.x);
-      }
+      },
     },
-    onMomentumEnd: (event: any) => {
-      runOnJS(handleScrollEnd)(event.contentOffset.x);
-    },
-  });
+    [handleScrollBegin, handleScrollEnd]
+  );
 
   // Calculate values before early return
   const isScrollable = audioDuration > maxDuration;
 
-  let waveformTotalWidth;
-  if (isScrollable) {
-    waveformTotalWidth = audioDuration * PIXELS_PER_SECOND;
-  } else {
-    waveformTotalWidth = isLooped
+  const waveformTotalWidth = useMemo(() => {
+    if (isScrollable) {
+      return audioDuration * PIXELS_PER_SECOND;
+    }
+    return isLooped
       ? SELECT_WIDTH
       : (audioDuration / maxDuration) * SELECT_WIDTH;
-  }
-  // Calculate gradient fill progress - always based on video duration box
-  const playbackProgressPercent = useMemo(() => {
-    if (maxDuration <= 0) return 0;
-    return (clamp(videoCurrentTime, 0, maxDuration) / maxDuration) * 100;
-  }, [maxDuration, videoCurrentTime]);
+  }, [isScrollable, audioDuration, isLooped, maxDuration]);
+  // Calculate gradient fill width in px for reliable visibility/clipping behavior.
+  const playbackProgressWidth = useMemo(() => {
+    if (maxDuration <= 0 || isScrollingState) return 0;
+    const progress = clamp(videoCurrentTime, 0, maxDuration) / maxDuration;
+    const width = progress * SELECT_WIDTH;
+    return width > 0 ? Math.max(width, 1) : 0;
+  }, [maxDuration, videoCurrentTime, isScrollingState]);
+
+  const shouldRenderPlaybackFill = playbackProgressWidth > 0;
 
   // All hooks must be called before any early returns
   const contentContainerStyle = useMemo(
@@ -467,15 +515,14 @@ export const AudioTrimmerBottomSheet: React.FC<Props> = ({
           style={[styles.selectionBox, { width: SELECT_WIDTH }]}
           pointerEvents="none"
         >
-          <LinearGradient
-            colors={['#E3196A80', '#FE905080']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={[
-              styles.playbackFill,
-              { width: `${playbackProgressPercent}%` },
-            ]}
-          />
+          {shouldRenderPlaybackFill ? (
+            <LinearGradient
+              colors={['#E3196A80', '#FE905080']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[styles.playbackFill, { width: playbackProgressWidth }]}
+            />
+          ) : null}
         </View>
       </View>
 
@@ -593,7 +640,12 @@ const TimelineTicks = React.memo(
             key={i}
             style={[
               styles.tick,
-              { height: 8 + height * 38, backgroundColor: barColor },
+              {
+                width: barWidth,
+                marginRight: barGap,
+                height: 8 + height * 38,
+                backgroundColor: barColor,
+              },
             ]}
           />
         ))}
